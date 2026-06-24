@@ -1,7 +1,7 @@
 // Approx distance (km) from Kharadi 411014 to common Pune pincodes.
 // Used only for a tentative delivery cost estimate shown in the Order form.
 const PINCODE_DISTANCE_KM: Record<string, number> = {
-  // ── Kharadi & immediately adjacent (0–5 km) ─────────────────────────────
+  // ── Kharadi & immediately adjacent (0–4 km) ─────────────────────────────
   "411014": 0,   // Kharadi
   "411036": 3,   // Wagholi (near side)
   "411032": 4,   // Viman Nagar / Lohegaon
@@ -15,7 +15,6 @@ const PINCODE_DISTANCE_KM: Record<string, number> = {
   "411060": 7,   // Kharadi / Magarpatta
   "411028": 8,   // Manjri / Fursungi
   "411068": 8,   // Mundhwa
-  "411036": 4,   // Wagholi
   "411012": 9,   // Koregaon Park
   "411001": 9,   // Pune Cantonment / Camp
 
@@ -89,10 +88,10 @@ export function estimateDelivery(pincodeRaw: string): DeliveryEstimate {
   const km = PINCODE_DISTANCE_KM[pin];
   if (km === undefined) return { kind: "unknown" };
 
-  if (km <= 5)  return { kind: "ok", km, label: "0–5 km",   charge: "₹50"  };
-  if (km <= 10) return { kind: "ok", km, label: "5–10 km",  charge: "₹80"  };
-  if (km <= 15) return { kind: "ok", km, label: "10–15 km", charge: "₹120" };
-  if (km <= 20) return { kind: "ok", km, label: "15–20 km", charge: "₹180" };
+  if (km <= 4)  return { kind: "ok", km, label: "2–4 km",   charge: "₹50+"  };
+  if (km <= 8)  return { kind: "ok", km, label: "4–8 km",   charge: "₹110+" };
+  if (km <= 12) return { kind: "ok", km, label: "8–12 km",  charge: "₹150+" };
+  if (km <= 20) return { kind: "ok", km, label: "12–20 km", charge: "₹200+" };
 
   // 20+ km — known zone but needs individual quote
   return { kind: "quote", km, label: "20+ km" };

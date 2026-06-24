@@ -668,6 +668,10 @@ function DeliveryEstimateCard({
         delivery partner availability. This estimate is shown for reference only and
         is not added to your order total.
       </p>
+      <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+        * You may also book your preferred delivery partner (Porter / Uber / Rapido, etc.)
+        for pickup from our location at your convenience.
+      </p>
     </div>
   );
 }
