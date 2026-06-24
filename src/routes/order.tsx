@@ -6,10 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { estimateDelivery } from "@/lib/delivery-estimate";
 import { useCart, formatCartSummary } from "@/lib/cart-context";
 
-const EMAILJS_SERVICE_ID = "service_uzxszot";
-const EMAILJS_TEMPLATE_ID = "template_9mm79jb";
-const EMAILJS_PUBLIC_KEY = "FVFudd1L2Yxx2YziQ";
-
 export const Route = createFileRoute("/order")({
   validateSearch: (search: Record<string, unknown>) => ({
     from: (search.from as string) ?? "",
@@ -127,25 +123,76 @@ function OrderPage() {
       const newOrderNumber = data?.order_number ?? null;
       setOrderNumber(newOrderNumber);
 
-      // Send confirmation email via EmailJS (non-blocking)
+      // Send confirmation email via Brevo (non-blocking)
       try {
-        await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            service_id: EMAILJS_SERVICE_ID,
-            template_id: EMAILJS_TEMPLATE_ID,
-            user_id: EMAILJS_PUBLIC_KEY,
-            template_params: {
-              to_email: form.email,
-              customer_name: form.name,
-              order_number: String(newOrderNumber ?? ""),
-              product_type: form.type,
-              delivery: form.delivery === "Delivery" ? `Delivery to ${form.address}` : "Pickup",
-              date_required: form.date || "To be confirmed",
+        if (form.email) {
+          await fetch("https://api.brevo.com/v3/smtp/email", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "api-key": "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",
             },
-          }),
-        });
+            body: JSON.stringify({
+              sender: { name: "Grain Crumbs by Ankita", email: "bhatikudale1006@gmail.com" },
+              to: [{ email: form.email, name: form.name }],
+              subject: `#${newOrderNumber} — Enquiry Received · Grain Crumbs`,
+              htmlContent: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
+<body style="margin:0;padding:0;background:#faf6f0;font-family:'Georgia',serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf6f0;padding:40px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:24px;overflow:hidden;border:1px solid #e8ddd0;">
+        <tr>
+          <td style="background:#2c1810;padding:36px 40px;text-align:center;">
+            <p style="margin:0;font-family:Georgia,serif;font-size:26px;color:#e8c97d;letter-spacing:2px;">GRAIN CRUMBS</p>
+            <p style="margin:4px 0 0;font-size:12px;color:#c4a870;letter-spacing:3px;text-transform:uppercase;">by Ankita</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px;">
+            <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:28px;color:#2c1810;">Enquiry Received! 🎉</h1>
+            <p style="margin:0 0 24px;color:#6b5c4e;font-size:15px;">Hi ${form.name}, thank you for reaching out to Grain Crumbs.</p>
+            <div style="background:#faf6f0;border-radius:16px;padding:24px;margin-bottom:24px;border:1px solid #e8ddd0;">
+              <p style="margin:0 0 16px;font-size:12px;text-transform:uppercase;letter-spacing:2px;color:#9b8b7d;">Your Enquiry Details</p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr><td style="padding:8px 0;border-bottom:1px solid #e8ddd0;">
+                  <span style="font-size:12px;color:#9b8b7d;text-transform:uppercase;letter-spacing:1px;">Order Reference</span><br/>
+                  <strong style="font-size:18px;color:#2c1810;font-family:Georgia,serif;">#${newOrderNumber}</strong>
+                </td></tr>
+                <tr><td style="padding:8px 0;border-bottom:1px solid #e8ddd0;">
+                  <span style="font-size:12px;color:#9b8b7d;text-transform:uppercase;letter-spacing:1px;">Product</span><br/>
+                  <span style="font-size:15px;color:#2c1810;">${form.type}</span>
+                </td></tr>
+                <tr><td style="padding:8px 0;border-bottom:1px solid #e8ddd0;">
+                  <span style="font-size:12px;color:#9b8b7d;text-transform:uppercase;letter-spacing:1px;">Fulfilment</span><br/>
+                  <span style="font-size:15px;color:#2c1810;">${form.delivery === "Delivery" ? `Delivery to ${form.address}` : "Pickup"}</span>
+                </td></tr>
+                ${form.date ? `<tr><td style="padding:8px 0;">
+                  <span style="font-size:12px;color:#9b8b7d;text-transform:uppercase;letter-spacing:1px;">Date Required</span><br/>
+                  <span style="font-size:15px;color:#2c1810;">${form.date}</span>
+                </td></tr>` : ""}
+              </table>
+            </div>
+            <p style="color:#6b5c4e;font-size:15px;line-height:1.7;margin:0 0 16px;">We've received your enquiry and will get back to you shortly with availability, pricing and next steps.</p>
+            <p style="color:#6b5c4e;font-size:15px;line-height:1.7;margin:0 0 24px;">For the fastest response, feel free to send us a message on WhatsApp!</p>
+            <a href="https://wa.me/918208257574" style="display:inline-block;background:#e8c97d;color:#2c1810;padding:14px 28px;border-radius:99px;text-decoration:none;font-size:14px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;">WhatsApp Us</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#faf6f0;border-top:1px solid #e8ddd0;padding:24px 40px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#9b8b7d;">Grain Crumbs by Ankita · Pune, Maharashtra</p>
+            <p style="margin:6px 0 0;font-size:11px;color:#b5a89a;">Please do not reply to this email. Contact us on WhatsApp for all enquiries.</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+            }),
+          });
+        }
       } catch (emailErr) {
         console.warn("Email failed (order still saved):", emailErr);
       }

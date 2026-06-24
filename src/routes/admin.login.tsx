@@ -48,7 +48,7 @@ function AdminLogin() {
       <div className="container-prose max-w-md">
         <div className="rounded-[2rem] border border-border bg-card p-8 md:p-10">
           <p className="divider-gold eyebrow">Admin</p>
-          <h1 className="mt-4 font-display text-4xl">{mode === "signin" ? "Sign in" : "Create admin account"}</h1>
+          <h1 className="mt-4 font-display text-4xl">{mode === "signin" ? "Sign in" : ""}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {mode === "signin" ? "Access the Grain Crumbs orders dashboard." : "First-time setup. Only available until the first admin is created."}
           </p>
@@ -71,7 +71,7 @@ function AdminLogin() {
             onClick={() => { setMode(mode === "signin" ? "bootstrap" : "signin"); setErr(null); }}
             className="mt-6 text-xs uppercase tracking-[0.18em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           >
-            {mode === "signin" ? "First time? Create admin account" : "Back to sign in"}
+            {mode === "signin" }
           </button>
         </div>
       </div>

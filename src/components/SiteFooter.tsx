@@ -79,7 +79,7 @@ export function SiteFooter() {
               </a>
               {" "}
             </p>
-            <Link to="/admin/login" className="tracking-[0.25em] uppercase hover:text-foreground">Admin</Link>
+            {/* <Link to="/admin/login" className="tracking-[0.25em] uppercase hover:text-foreground">Admin</Link> */}
           </div>
         </div>
 
