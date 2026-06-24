@@ -1,15 +1,19 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { CheckCircle2, Loader2, MapPin, MessageCircle } from "lucide-react";
+import { CheckCircle2, Loader2, MapPin, MessageCircle, ShoppingBag } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
 import { supabase } from "@/integrations/supabase/client";
 import { estimateDelivery } from "@/lib/delivery-estimate";
+import { useCart, formatCartSummary } from "@/lib/cart-context";
 
 const EMAILJS_SERVICE_ID = "service_uzxszot";
 const EMAILJS_TEMPLATE_ID = "template_9mm79jb";
 const EMAILJS_PUBLIC_KEY = "FVFudd1L2Yxx2YziQ";
 
 export const Route = createFileRoute("/order")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    from: (search.from as string) ?? "",
+  }),
   head: () => ({
     meta: [
       { title: "Order Now — Grain Crumbs" },
@@ -33,15 +37,22 @@ const weights = ["250g", "500g", "650g", "1kg"];
 const occasions = ["Birthday", "Anniversary", "Corporate Event", "Gift", "Other"];
 
 function OrderPage() {
+  const { from } = useSearch({ from: "/order" });
+  const { items: cartItems, subtotal: cartSubtotal, clearCart } = useCart();
+  const hasCart = from === "cart" && cartItems.length > 0;
+  const cartSummary = formatCartSummary(cartItems);
+
   const [submitted, setSubmitted] = useState(false);
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: "", phone: "", email: "",
-    type: "Brownies" as ProductType,
+    type: (hasCart ? "Brownies" : "Brownies") as ProductType,
     flavour: flavoursList[0],
     weight: weights[1],
+    browniePieces: "12 pieces",
     message: "", theme: "",
+    giftTheme: "",
     delivery: "Pickup" as Delivery,
     address: "",
     pincode: "",
@@ -62,8 +73,10 @@ function OrderPage() {
       `Phone: ${form.phone}`,
       form.email && `Email: ${form.email}`,
       `Product: ${form.type}`,
-      `Flavour: ${form.flavour}`,
-      `Weight: ${form.weight}`,
+      hasCart && form.type === "Brownies"
+        ? `Cart: ${cartSummary} (Est. ₹${cartSubtotal})`
+        : `Flavour: ${form.flavour}`,
+      form.type === "Brownie Cake" && `Weight: ${form.weight}`,
       form.message && `Cake message: ${form.message}`,
       form.theme && `Theme: ${form.theme}`,
       `Delivery: ${form.delivery}`,
@@ -73,26 +86,40 @@ function OrderPage() {
       form.notes && `Notes: ${form.notes}`,
     ].filter(Boolean).join("\n");
     return encodeURIComponent(lines);
-  }, [form]);
+  }, [form, hasCart, cartSummary, cartSubtotal]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
+      const cartNotes = hasCart && form.type === "Brownies"
+        ? [form.notes, `Cart: ${cartSummary} (Est. ₹${cartSubtotal})`].filter(Boolean).join("\n")
+        : form.notes || null;
+
       const { data, error } = await supabase.from("orders").insert({
         name: form.name,
         phone: form.phone,
         email: form.email,
         product_type: form.type,
-        flavour: form.flavour,
-        weight: form.weight,
+        flavour: form.type === "Brownies" || form.type === "Brownie Cake"
+          ? hasCart && form.type === "Brownies"
+            ? cartItems.map((i) => i.name).join(", ")
+            : form.flavour
+          : null,
+        weight: form.type === "Brownie Cake"
+          ? form.weight
+          : form.type === "Brownies" && !hasCart
+            ? form.browniePieces
+            : hasCart ? cartSummary : null,
         cake_message: form.message || null,
-        theme: form.theme || null,
+        theme: form.type === "Brownie Cake"
+          ? form.theme || null
+          : form.type === "Gift Box" ? form.giftTheme : null,
         delivery: form.delivery,
         address: form.delivery === "Delivery" ? form.address : null,
         occasion: form.occasion,
         date_required: form.date || null,
-        notes: form.notes || null,
+        notes: cartNotes,
       }).select("order_number").single();
 
       if (error) throw error;
@@ -100,7 +127,7 @@ function OrderPage() {
       const newOrderNumber = data?.order_number ?? null;
       setOrderNumber(newOrderNumber);
 
-      // Send confirmation email via EmailJS fetch (no package needed)
+      // Send confirmation email via EmailJS (non-blocking)
       try {
         await fetch("https://api.emailjs.com/api/v1.0/email/send", {
           method: "POST",
@@ -123,6 +150,7 @@ function OrderPage() {
         console.warn("Email failed (order still saved):", emailErr);
       }
 
+      if (hasCart) clearCart();
       setSubmitted(true);
     } catch (err) {
       console.error(err);
@@ -156,11 +184,7 @@ function OrderPage() {
                 Prefer to chat? Send the same details on WhatsApp for the fastest reply.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
-                <a
-                  href={`https://wa.me/918208257574?text=${waMessage}`}
-                  target="_blank" rel="noreferrer"
-                  className="btn-gold"
-                >
+                <a href={`https://wa.me/918208257574?text=${waMessage}`} target="_blank" rel="noreferrer" className="btn-gold">
                   <MessageCircle className="h-4 w-4" /> Send on WhatsApp
                 </a>
                 <Link to="/" className="btn-outline">Back to home</Link>
@@ -179,8 +203,7 @@ function OrderPage() {
           <p className="divider-gold eyebrow">Place an Order</p>
           <h1 className="mt-5 font-display text-5xl md:text-6xl">Tell us what to bake.</h1>
           <p className="mx-auto mt-5 max-w-xl text-muted-foreground">
-            Fill in the form below and we'll get back within a few hours with availability,
-            pricing and the next steps.
+            Fill in the form below and we'll get back within a few hours with availability, pricing and the next steps.
           </p>
         </div>
       </section>
@@ -189,6 +212,29 @@ function OrderPage() {
         <div className="container-prose grid gap-10 lg:grid-cols-[1.6fr_1fr]">
           <Reveal>
             <form onSubmit={onSubmit} className="space-y-10 rounded-[2rem] border border-border bg-card p-6 md:p-10">
+
+              {/* Cart summary banner */}
+              {hasCart && (
+                <div className="rounded-2xl border border-[color:var(--gold)]/40 bg-[color:var(--cream-dark)]/60 p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <ShoppingBag className="h-5 w-5 text-[color:var(--gold)]" />
+                    <span className="font-display text-lg">Your Cart</span>
+                  </div>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    {cartItems.map((item) => (
+                      <li key={item.slug} className="flex justify-between">
+                        <span>{item.name} × {item.quantity}</span>
+                        <span>₹{item.price * item.quantity}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-3 flex justify-between border-t border-border pt-3 text-sm font-medium">
+                    <span>Estimated Total</span>
+                    <span>₹{cartSubtotal}</span>
+                  </div>
+                </div>
+              )}
+
               <Fieldset title="Customer Information" step="01">
                 <Field label="Full Name" required>
                   <input required value={form.name} onChange={(e) => update("name", e.target.value)} className={inputCls} placeholder="Your name" />
@@ -201,33 +247,42 @@ function OrderPage() {
                 </Field>
               </Fieldset>
 
-              <Fieldset title="Product Selection" step="02">
-                <Field label="What would you like?" full>
-                  <ChipGroup options={productTypes} value={form.type} onChange={(v) => update("type", v)} />
-                </Field>
-                <Field label="Flavour">
-                  <select value={form.flavour} onChange={(e) => update("flavour", e.target.value)} className={inputCls}>
-                    {flavoursList.map((f) => <option key={f}>{f}</option>)}
-                  </select>
-                </Field>
-                <Field label="Weight / Quantity">
-                  <ChipGroup options={weights} value={form.weight} onChange={(v) => update("weight", v)} />
-                </Field>
-              </Fieldset>
+              {/* Only show product selection if NOT coming from cart */}
+              {!hasCart && (
+                <Fieldset title="Product Selection" step="02">
+                  <Field label="What would you like?" full>
+                    <ChipGroup options={productTypes} value={form.type} onChange={(v) => update("type", v)} />
+                  </Field>
+                  {(form.type === "Brownies" || form.type === "Brownie Cake") && (
+                    <Field label="Flavour">
+                      <select value={form.flavour} onChange={(e) => update("flavour", e.target.value)} className={inputCls}>
+                        {flavoursList.map((f) => <option key={f}>{f}</option>)}
+                      </select>
+                    </Field>
+                  )}
+                  {form.type === "Brownie Cake" && (
+                    <Field label="Weight">
+                      <ChipGroup options={weights} value={form.weight} onChange={(v) => update("weight", v)} />
+                    </Field>
+                  )}
+                  {form.type === "Brownies" && (
+                    <Field label="Quantity">
+                      <input value={form.browniePieces} onChange={(e) => update("browniePieces", e.target.value)} className={inputCls} placeholder="e.g. 12 pieces" />
+                    </Field>
+                  )}
+                </Fieldset>
+              )}
 
-              <Fieldset title="Customisation" step="03">
+              <Fieldset title="Customisation" step={hasCart ? "02" : "03"}>
                 <Field label="Cake Message" full>
                   <input value={form.message} onChange={(e) => update("message", e.target.value)} className={inputCls} placeholder="e.g. Happy Birthday, Aanya!" />
                 </Field>
-                <Field label="Theme Request">
+                <Field label="Theme / Special Request">
                   <input value={form.theme} onChange={(e) => update("theme", e.target.value)} className={inputCls} placeholder="Floral, minimal, gold accents…" />
-                </Field>
-                <Field label="Reference Image (optional)">
-                  <input type="file" accept="image/*" className="block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-[color:var(--chocolate-dark)] file:px-4 file:py-2 file:text-[color:var(--cream)] hover:file:bg-[color:var(--chocolate)]" />
                 </Field>
               </Fieldset>
 
-              <Fieldset title="Delivery" step="04">
+              <Fieldset title="Delivery" step={hasCart ? "03" : "04"}>
                 <Field label="How will you receive it?" full>
                   <ChipGroup options={["Pickup", "Delivery"]} value={form.delivery} onChange={(v) => update("delivery", v as Delivery)} />
                 </Field>
@@ -264,15 +319,9 @@ function OrderPage() {
               </Fieldset>
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
-                <p className="text-xs text-muted-foreground">
-                  By submitting, you agree to be contacted for order confirmation.
-                </p>
+                <p className="text-xs text-muted-foreground">By submitting, you agree to be contacted for order confirmation.</p>
                 <div className="flex flex-wrap gap-3">
-                  <a
-                    href={`https://wa.me/918208257574?text=${waMessage}`}
-                    target="_blank" rel="noreferrer"
-                    className="btn-outline"
-                  >
+                  <a href={`https://wa.me/918208257574?text=${waMessage}`} target="_blank" rel="noreferrer" className="btn-outline">
                     <MessageCircle className="h-4 w-4" /> Send on WhatsApp instead
                   </a>
                   <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-60">
@@ -303,12 +352,8 @@ function OrderPage() {
               </div>
               <div className="rounded-2xl border border-border bg-[color:var(--cream-dark)]/40 p-7">
                 <p className="font-display text-xl">Need it sooner?</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  WhatsApp is the fastest way to reach us — we usually reply within an hour.
-                </p>
-                <a href="https://wa.me/918208257574" target="_blank" rel="noreferrer" className="btn-gold mt-5">
-                  WhatsApp Us
-                </a>
+                <p className="mt-2 text-sm text-muted-foreground">WhatsApp is the fastest way to reach us — we usually reply within an hour.</p>
+                <a href="https://wa.me/918208257574" target="_blank" rel="noreferrer" className="btn-gold mt-5">WhatsApp Us</a>
               </div>
             </aside>
           </Reveal>
@@ -318,8 +363,7 @@ function OrderPage() {
   );
 }
 
-const inputCls =
-  "w-full rounded-md border border-input bg-background px-4 py-3 text-sm outline-none transition focus:border-[color:var(--gold)] focus:ring-2 focus:ring-[color:var(--gold)]/30";
+const inputCls = "w-full rounded-md border border-input bg-background px-4 py-3 text-sm outline-none transition focus:border-[color:var(--gold)] focus:ring-2 focus:ring-[color:var(--gold)]/30";
 
 function Fieldset({ title, step, children }: { title: string; step: string; children: React.ReactNode }) {
   return (
@@ -350,17 +394,9 @@ function ChipGroup<T extends string>({ options, value, onChange }: { options: re
       {options.map((o) => {
         const active = o === value;
         return (
-          <button
-            key={o}
-            type="button"
-            onClick={() => onChange(o)}
-            className={`rounded-full border px-4 py-2 text-sm transition ${
-              active
-                ? "border-[color:var(--chocolate-dark)] bg-[color:var(--chocolate-dark)] text-[color:var(--cream)]"
-                : "border-border bg-background hover:border-[color:var(--gold)]"
-            }`}
-            aria-pressed={active}
-          >
+          <button key={o} type="button" onClick={() => onChange(o)}
+            className={`rounded-full border px-4 py-2 text-sm transition ${active ? "border-[color:var(--chocolate-dark)] bg-[color:var(--chocolate-dark)] text-[color:var(--cream)]" : "border-border bg-background hover:border-[color:var(--gold)]"}`}
+            aria-pressed={active}>
             {o}
           </button>
         );
@@ -369,75 +405,30 @@ function ChipGroup<T extends string>({ options, value, onChange }: { options: re
   );
 }
 
-function DeliveryEstimateCard({
-  estimate,
-  pincode,
-}: {
-  estimate: ReturnType<typeof estimateDelivery>;
-  pincode: string;
-}) {
+function DeliveryEstimateCard({ estimate, pincode }: { estimate: ReturnType<typeof estimateDelivery>; pincode: string }) {
   if (!pincode) return null;
-
-  const headerCls =
-    "mt-4 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 p-5";
-
-  if (estimate.kind === "invalid") {
-    return (
-      <div className={headerCls}>
-        <p className="text-sm text-muted-foreground">
-          Enter a valid 6-digit pincode to see an estimated delivery charge.
-        </p>
-      </div>
-    );
-  }
-
-  if (estimate.kind === "unknown") {
-    return (
-      <div className={headerCls}>
-        <div className="flex items-center gap-2 text-[color:var(--chocolate-dark)]">
-          <MapPin className="h-4 w-4 text-[color:var(--gold)]" />
-          <p className="eyebrow !mb-0">Estimated Delivery Charge</p>
-        </div>
-        <p className="mt-3 font-display text-2xl">Contact for Quote</p>
-        <p className="mt-2 text-xs text-muted-foreground">
-          We don't have this pincode in our local zones yet — WhatsApp us and we'll confirm the exact charge.
-        </p>
-      </div>
-    );
-  }
-
-  if (estimate.kind === "quote") {
-    return (
-      <div className={headerCls}>
-        <div className="flex items-center gap-2 text-[color:var(--chocolate-dark)]">
-          <MapPin className="h-4 w-4 text-[color:var(--gold)]" />
-          <p className="eyebrow !mb-0">Estimated Delivery Charge</p>
-        </div>
-        <p className="mt-3 font-display text-2xl">Contact for Quote</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          ~{estimate.km} km from Kharadi · {estimate.label}
-        </p>
-      </div>
-    );
-  }
-
+  const headerCls = "mt-4 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 p-5";
+  if (estimate.kind === "invalid") return <div className={headerCls}><p className="text-sm text-muted-foreground">Enter a valid 6-digit pincode to see an estimated delivery charge.</p></div>;
+  if (estimate.kind === "unknown") return (
+    <div className={headerCls}>
+      <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-[color:var(--gold)]" /><p className="eyebrow !mb-0">Estimated Delivery Charge</p></div>
+      <p className="mt-3 font-display text-2xl">Contact for Quote</p>
+      <p className="mt-2 text-xs text-muted-foreground">We don't have this pincode in our local zones yet — WhatsApp us to confirm.</p>
+    </div>
+  );
+  if (estimate.kind === "quote") return (
+    <div className={headerCls}>
+      <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-[color:var(--gold)]" /><p className="eyebrow !mb-0">Estimated Delivery Charge</p></div>
+      <p className="mt-3 font-display text-2xl">Contact for Quote</p>
+      <p className="mt-1 text-xs text-muted-foreground">~{estimate.km} km from Kharadi · {estimate.label}</p>
+    </div>
+  );
   return (
     <div className={headerCls}>
-      <div className="flex items-center gap-2 text-[color:var(--chocolate-dark)]">
-        <MapPin className="h-4 w-4 text-[color:var(--gold)]" />
-        <p className="eyebrow !mb-0">Estimated Delivery Charge</p>
-      </div>
-      <p className="mt-3 font-display text-3xl text-[color:var(--chocolate-dark)]">
-        {estimate.charge}{" "}
-        <span className="text-sm font-normal text-muted-foreground">(Approx.)</span>
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        ~{estimate.km} km from Kharadi · {estimate.label}
-      </p>
-      <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-        * Final delivery charges may vary based on exact location, order size, and
-        delivery partner availability. This estimate is shown for reference only.
-      </p>
+      <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-[color:var(--gold)]" /><p className="eyebrow !mb-0">Estimated Delivery Charge</p></div>
+      <p className="mt-3 font-display text-3xl text-[color:var(--chocolate-dark)]">{estimate.charge} <span className="text-sm font-normal text-muted-foreground">(Approx.)</span></p>
+      <p className="mt-1 text-xs text-muted-foreground">~{estimate.km} km from Kharadi · {estimate.label}</p>
+      <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">* Final delivery charges may vary. This estimate is for reference only.</p>
     </div>
   );
 }
