@@ -206,11 +206,11 @@ const collections = [
     available: true,
     to: "/brownies" as const,
     points: [
-      "Millet flour based",
-      "Sweetened with jaggery",
-      "No refined sugar",
-      "Premium couverture chocolate",
-      "Freshly made to order",
+      "Millet Flour Based",
+      "Sweetened With Jaggery",
+      "No Refined Sugar",
+      "Premium Couverture Chocolate",
+      "Freshly Made To Order",
     ],
   },
   {
@@ -219,9 +219,9 @@ const collections = [
     available: false,
     to: "/grain-crumbs-lite" as const,
     points: [
-      "Jaggery + monk fruit",
-      "Reduced added sugar",
-      "Lower-GI focus",
+      "Jaggery + Monk Fruit",
+      "Reduced Added Sugar",
+      "Lower-GI Focus",
     ],
   },
   {
@@ -230,9 +230,9 @@ const collections = [
     available: false,
     to: "/grain-crumbs-pro" as const,
     points: [
-      "High protein",
-      "Millet based",
-      "Fitness focused",
+      "High Protein",
+      "Millet Based",
+      "Fitness Focused",
     ],
   },
   {
