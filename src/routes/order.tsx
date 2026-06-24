@@ -1,10 +1,14 @@
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { CheckCircle2, Loader2, MapPin, MessageCircle, ShoppingBag } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
 import { supabase } from "@/integrations/supabase/client";
 import { estimateDelivery } from "@/lib/delivery-estimate";
 import { useCart, formatCartSummary } from "@/lib/cart-context";
+
+const EMAILJS_SERVICE_ID = "service_o3pbjwb";
+const EMAILJS_TEMPLATE_ID = "template_4ci5adc";
+const EMAILJS_PUBLIC_KEY = "P8p-EPatFJBMOHmsz";
 
 export const Route = createFileRoute("/order")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -29,38 +33,71 @@ const flavoursList = [
   "Chocolate Walnut", "Cappuccino Walnut", "Mixed Berry Jam",
   "Coconut Bounty", "Cream Cheese", "Hazelnut Spread",
 ];
-const weights = ["250g", "500g", "650g", "1kg"];
+const browniePieces = ["6 pieces", "12 pieces", "18 pieces", "24 pieces"];
+const cakeWeights = ["250g", "500g", "650g", "1kg"];
+
+const giftThemes = ["Birthday", "Anniversary", "Congratulations", "Thank You", "Baby Announcement", "Festival", "Other"];
+const giftQtyOptions = ["1", "2–5", "6–10", "10+"];
+const giftBudgetOptions = ["₹250–₹500", "₹500–₹1000", "₹1000+"];
+
+const corporateBoxOptions = ["10–25", "25–50", "50–100", "100+"];
+const brandingOptions = ["Logo Sticker", "Custom Message Card", "Custom Packaging", "Employee Names"];
+
 const occasions = ["Birthday", "Anniversary", "Corporate Event", "Gift", "Other"];
 
 function OrderPage() {
-  const { from } = useSearch({ from: "/order" });
+  const { from } = Route.useSearch();
   const { items: cartItems, subtotal: cartSubtotal, clearCart } = useCart();
   const hasCart = from === "cart" && cartItems.length > 0;
-  const cartSummary = formatCartSummary(cartItems);
 
   const [submitted, setSubmitted] = useState(false);
-  const [orderNumber, setOrderNumber] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [orderNumber, setOrderNumber] = useState<number | null>(null);
+
   const [form, setForm] = useState({
     name: "", phone: "", email: "",
-    type: (hasCart ? "Brownies" : "Brownies") as ProductType,
+    type: "Brownies" as ProductType,
     flavour: flavoursList[0],
-    weight: weights[1],
-    browniePieces: "12 pieces",
+    browniePieces: browniePieces[0],
+    weight: cakeWeights[1],
     message: "", theme: "",
-    giftTheme: "",
     delivery: "Pickup" as Delivery,
     address: "",
     pincode: "",
     occasion: "Birthday",
     date: "",
     notes: "",
+    // Gift Box fields
+    giftTheme: "Birthday",
+    giftQty: "1",
+    giftBudget: "",
+    // Corporate fields
+    companyName: "",
+    corporateBoxes: corporateBoxOptions[0],
+    corporateDeliveryDate: "",
+    corporateBudgetPerBox: "",
+    corporateBranding: [] as string[],
+    corporateNotes: "",
   });
 
   const estimate = estimateDelivery(form.pincode);
 
   const update = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  const toggleBranding = (option: string) => {
+    setForm((f) => ({
+      ...f,
+      corporateBranding: f.corporateBranding.includes(option)
+        ? f.corporateBranding.filter((b) => b !== option)
+        : [...f.corporateBranding, option],
+    }));
+  };
+
+  const cartSummary = useMemo(
+    () => (hasCart ? formatCartSummary(cartItems) : ""),
+    [hasCart, cartItems],
+  );
 
   const waMessage = useMemo(() => {
     const lines = [
@@ -69,15 +106,26 @@ function OrderPage() {
       `Phone: ${form.phone}`,
       form.email && `Email: ${form.email}`,
       `Product: ${form.type}`,
-      hasCart && form.type === "Brownies"
-        ? `Cart: ${cartSummary} (Est. ₹${cartSubtotal})`
-        : `Flavour: ${form.flavour}`,
+      hasCart && form.type === "Brownies" && `Cart items: ${cartSummary}`,
+      hasCart && form.type === "Brownies" && `Estimated total: ₹${cartSubtotal}`,
+      !hasCart && form.type === "Brownies" && `Flavour: ${form.flavour}`,
+      !hasCart && form.type === "Brownies" && `Pieces: ${form.browniePieces}`,
+      form.type === "Brownie Cake" && `Flavour: ${form.flavour}`,
       form.type === "Brownie Cake" && `Weight: ${form.weight}`,
-      form.message && `Cake message: ${form.message}`,
-      form.theme && `Theme: ${form.theme}`,
+      form.type === "Brownie Cake" && form.message && `Cake message: ${form.message}`,
+      form.type === "Brownie Cake" && form.theme && `Theme: ${form.theme}`,
+      form.type === "Gift Box" && `Gift Theme: ${form.giftTheme}`,
+      form.type === "Gift Box" && `Number of Boxes: ${form.giftQty}`,
+      form.type === "Gift Box" && form.giftBudget && `Budget per Box: ${form.giftBudget}`,
+      form.type === "Bulk / Corporate Order" && `Company: ${form.companyName}`,
+      form.type === "Bulk / Corporate Order" && `Boxes Required: ${form.corporateBoxes}`,
+      form.type === "Bulk / Corporate Order" && form.corporateDeliveryDate && `Expected Delivery: ${form.corporateDeliveryDate}`,
+      form.type === "Bulk / Corporate Order" && form.corporateBudgetPerBox && `Budget per Box: ${form.corporateBudgetPerBox}`,
+      form.type === "Bulk / Corporate Order" && form.corporateBranding.length > 0 && `Branding: ${form.corporateBranding.join(", ")}`,
+      form.type === "Bulk / Corporate Order" && form.corporateNotes && `Additional Requirements: ${form.corporateNotes}`,
       `Delivery: ${form.delivery}`,
       form.delivery === "Delivery" && form.address && `Address: ${form.address}`,
-      `Occasion: ${form.occasion}`,
+      form.type !== "Bulk / Corporate Order" && `Occasion: ${form.occasion}`,
       form.date && `Date required: ${form.date}`,
       form.notes && `Notes: ${form.notes}`,
     ].filter(Boolean).join("\n");
@@ -95,7 +143,7 @@ function OrderPage() {
       const { data, error } = await supabase.from("orders").insert({
         name: form.name,
         phone: form.phone,
-        email: form.email,
+        email: form.email || null,
         product_type: form.type,
         flavour: form.type === "Brownies" || form.type === "Brownie Cake"
           ? hasCart && form.type === "Brownies"
@@ -113,7 +161,7 @@ function OrderPage() {
           : form.type === "Gift Box" ? form.giftTheme : null,
         delivery: form.delivery,
         address: form.delivery === "Delivery" ? form.address : null,
-        occasion: form.occasion,
+        occasion: form.type !== "Bulk / Corporate Order" ? form.occasion : null,
         date_required: form.date || null,
         notes: cartNotes,
       }).select("order_number").single();
@@ -123,78 +171,29 @@ function OrderPage() {
       const newOrderNumber = data?.order_number ?? null;
       setOrderNumber(newOrderNumber);
 
-      // Send confirmation email via Brevo (non-blocking)
-      try {
-        if (form.email) {
-          await fetch("https://api.brevo.com/v3/smtp/email", {
+      // Send confirmation email via EmailJS (non-blocking — order still saved if this fails)
+      if (form.email) {
+        try {
+          await fetch("https://api.emailjs.com/api/v1.0/email/send", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "api-key": "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",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              sender: { name: "Grain Crumbs by Ankita", email: "bhatikudale1006@gmail.com" },
-              to: [{ email: form.email, name: form.name }],
-              subject: `#${newOrderNumber} — Enquiry Received · Grain Crumbs`,
-              htmlContent: `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
-<body style="margin:0;padding:0;background:#faf6f0;font-family:'Georgia',serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf6f0;padding:40px 0;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:24px;overflow:hidden;border:1px solid #e8ddd0;">
-        <tr>
-          <td style="background:#2c1810;padding:36px 40px;text-align:center;">
-            <p style="margin:0;font-family:Georgia,serif;font-size:26px;color:#e8c97d;letter-spacing:2px;">GRAIN CRUMBS</p>
-            <p style="margin:4px 0 0;font-size:12px;color:#c4a870;letter-spacing:3px;text-transform:uppercase;">by Ankita</p>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:40px;">
-            <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:28px;color:#2c1810;">Enquiry Received! 🎉</h1>
-            <p style="margin:0 0 24px;color:#6b5c4e;font-size:15px;">Hi ${form.name}, thank you for reaching out to Grain Crumbs.</p>
-            <div style="background:#faf6f0;border-radius:16px;padding:24px;margin-bottom:24px;border:1px solid #e8ddd0;">
-              <p style="margin:0 0 16px;font-size:12px;text-transform:uppercase;letter-spacing:2px;color:#9b8b7d;">Your Enquiry Details</p>
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr><td style="padding:8px 0;border-bottom:1px solid #e8ddd0;">
-                  <span style="font-size:12px;color:#9b8b7d;text-transform:uppercase;letter-spacing:1px;">Order Reference</span><br/>
-                  <strong style="font-size:18px;color:#2c1810;font-family:Georgia,serif;">#${newOrderNumber}</strong>
-                </td></tr>
-                <tr><td style="padding:8px 0;border-bottom:1px solid #e8ddd0;">
-                  <span style="font-size:12px;color:#9b8b7d;text-transform:uppercase;letter-spacing:1px;">Product</span><br/>
-                  <span style="font-size:15px;color:#2c1810;">${form.type}</span>
-                </td></tr>
-                <tr><td style="padding:8px 0;border-bottom:1px solid #e8ddd0;">
-                  <span style="font-size:12px;color:#9b8b7d;text-transform:uppercase;letter-spacing:1px;">Fulfilment</span><br/>
-                  <span style="font-size:15px;color:#2c1810;">${form.delivery === "Delivery" ? `Delivery to ${form.address}` : "Pickup"}</span>
-                </td></tr>
-                ${form.date ? `<tr><td style="padding:8px 0;">
-                  <span style="font-size:12px;color:#9b8b7d;text-transform:uppercase;letter-spacing:1px;">Date Required</span><br/>
-                  <span style="font-size:15px;color:#2c1810;">${form.date}</span>
-                </td></tr>` : ""}
-              </table>
-            </div>
-            <p style="color:#6b5c4e;font-size:15px;line-height:1.7;margin:0 0 16px;">We've received your enquiry and will get back to you shortly with availability, pricing and next steps.</p>
-            <p style="color:#6b5c4e;font-size:15px;line-height:1.7;margin:0 0 24px;">For the fastest response, feel free to send us a message on WhatsApp!</p>
-            <a href="https://wa.me/918208257574" style="display:inline-block;background:#e8c97d;color:#2c1810;padding:14px 28px;border-radius:99px;text-decoration:none;font-size:14px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;">WhatsApp Us</a>
-          </td>
-        </tr>
-        <tr>
-          <td style="background:#faf6f0;border-top:1px solid #e8ddd0;padding:24px 40px;text-align:center;">
-            <p style="margin:0;font-size:12px;color:#9b8b7d;">Grain Crumbs by Ankita · Pune, Maharashtra</p>
-            <p style="margin:6px 0 0;font-size:11px;color:#b5a89a;">Please do not reply to this email. Contact us on WhatsApp for all enquiries.</p>
-          </td>
-        </tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`,
+              service_id: EMAILJS_SERVICE_ID,
+              template_id: EMAILJS_TEMPLATE_ID,
+              user_id: EMAILJS_PUBLIC_KEY,
+              template_params: {
+                to_email: form.email,
+                customer_name: form.name,
+                order_number: String(newOrderNumber ?? ""),
+                product_type: form.type,
+                delivery: form.delivery === "Delivery" ? `Delivery to ${form.address}` : "Pickup",
+                date_required: form.date || "To be confirmed",
+              },
             }),
           });
+        } catch (emailErr) {
+          console.warn("Email failed (order still saved):", emailErr);
         }
-      } catch (emailErr) {
-        console.warn("Email failed (order still saved):", emailErr);
       }
 
       if (hasCart) clearCart();
@@ -208,6 +207,7 @@ function OrderPage() {
   };
 
   if (submitted) {
+    const isCorporate = form.type === "Bulk / Corporate Order";
     return (
       <section className="section">
         <div className="container-prose max-w-2xl">
@@ -217,21 +217,33 @@ function OrderPage() {
                 <CheckCircle2 className="h-8 w-8" />
               </div>
               <h1 className="mt-6 font-display text-4xl md:text-5xl">Thank you!</h1>
+
               {orderNumber !== null && (
-                <div className="mx-auto mt-6 inline-flex flex-col items-center rounded-2xl border border-[color:var(--gold)]/40 bg-[color:var(--cream-dark)]/40 px-6 py-4">
-                  <span className="eyebrow !mb-1">Your Order Number</span>
-                  <span className="font-display text-3xl text-[color:var(--chocolate-dark)]">#{orderNumber}</span>
+                <div className="mt-6 inline-block rounded-2xl border border-[color:var(--gold)]/40 bg-[color:var(--cream-dark)]/60 px-8 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--gold)]">Your Enquiry ID</p>
+                  <p className="mt-1 font-display text-4xl text-[color:var(--chocolate-dark)]">#{orderNumber}</p>
                 </div>
               )}
-              <p className="mt-4 text-muted-foreground">
-                We've received your request and a confirmation email is on its way to <strong>{form.email}</strong>.
-                We'll contact you shortly to confirm availability, pricing and customisation details.
+
+              <p className="mt-6 text-muted-foreground">
+                {isCorporate
+                  ? "Thank you for your enquiry! We will review your requirements and share a personalized quotation shortly."
+                  : "We've received your request and will contact you shortly to confirm availability, pricing and customisation details."}
               </p>
+              {form.email && (
+                <p className="mt-3 text-sm text-[color:var(--gold)]">
+                  A confirmation email has been sent to <strong>{form.email}</strong>
+                </p>
+              )}
               <p className="mt-2 text-sm text-muted-foreground">
                 Prefer to chat? Send the same details on WhatsApp for the fastest reply.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
-                <a href={`https://wa.me/918208257574?text=${waMessage}`} target="_blank" rel="noreferrer" className="btn-gold">
+                <a
+                  href={`https://wa.me/918208257574?text=${waMessage}`}
+                  target="_blank" rel="noreferrer"
+                  className="btn-gold"
+                >
                   <MessageCircle className="h-4 w-4" /> Send on WhatsApp
                 </a>
                 <Link to="/" className="btn-outline">Back to home</Link>
@@ -243,6 +255,11 @@ function OrderPage() {
     );
   }
 
+  const isCorporate = form.type === "Bulk / Corporate Order";
+  const isGiftBox = form.type === "Gift Box";
+  const isBrownies = form.type === "Brownies";
+  const isBrownieCake = form.type === "Brownie Cake";
+
   return (
     <>
       <section className="border-b border-border/60">
@@ -250,7 +267,8 @@ function OrderPage() {
           <p className="divider-gold eyebrow">Place an Order</p>
           <h1 className="mt-5 font-display text-5xl md:text-6xl">Tell us what to bake.</h1>
           <p className="mx-auto mt-5 max-w-xl text-muted-foreground">
-            Fill in the form below and we'll get back within a few hours with availability, pricing and the next steps.
+            Fill in the form below and we'll get back within minutes with availability,
+            pricing and the next steps.
           </p>
         </div>
       </section>
@@ -260,28 +278,6 @@ function OrderPage() {
           <Reveal>
             <form onSubmit={onSubmit} className="space-y-10 rounded-[2rem] border border-border bg-card p-6 md:p-10">
 
-              {/* Cart summary banner */}
-              {hasCart && (
-                <div className="rounded-2xl border border-[color:var(--gold)]/40 bg-[color:var(--cream-dark)]/60 p-5">
-                  <div className="flex items-center gap-3 mb-3">
-                    <ShoppingBag className="h-5 w-5 text-[color:var(--gold)]" />
-                    <span className="font-display text-lg">Your Cart</span>
-                  </div>
-                  <ul className="space-y-1 text-sm text-muted-foreground">
-                    {cartItems.map((item) => (
-                      <li key={item.slug} className="flex justify-between">
-                        <span>{item.name} × {item.quantity}</span>
-                        <span>₹{item.price * item.quantity}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-3 flex justify-between border-t border-border pt-3 text-sm font-medium">
-                    <span>Estimated Total</span>
-                    <span>₹{cartSubtotal}</span>
-                  </div>
-                </div>
-              )}
-
               <Fieldset title="Customer Information" step="01">
                 <Field label="Full Name" required>
                   <input required value={form.name} onChange={(e) => update("name", e.target.value)} className={inputCls} placeholder="Your name" />
@@ -289,47 +285,148 @@ function OrderPage() {
                 <Field label="Mobile Number" required>
                   <input required type="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} className={inputCls} placeholder="+91 9XXXX XXXXX" />
                 </Field>
-                <Field label="Email" required>
-                  <input required type="email" value={form.email} onChange={(e) => update("email", e.target.value)} className={inputCls} placeholder="you@example.com" />
+                <Field label="Email (optional)">
+                  <input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} className={inputCls} placeholder="you@example.com" />
                 </Field>
               </Fieldset>
 
-              {/* Only show product selection if NOT coming from cart */}
-              {!hasCart && (
-                <Fieldset title="Product Selection" step="02">
-                  <Field label="What would you like?" full>
-                    <ChipGroup options={productTypes} value={form.type} onChange={(v) => update("type", v)} />
-                  </Field>
-                  {(form.type === "Brownies" || form.type === "Brownie Cake") && (
+              <Fieldset title="Product Selection" step="02">
+                <Field label="What would you like?" full>
+                  <ChipGroup options={productTypes} value={form.type} onChange={(v) => update("type", v)} />
+                </Field>
+
+                {/* BROWNIES: cart summary OR flavour + piece count */}
+                {isBrownies && hasCart && (
+                  <div className="sm:col-span-2 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ShoppingBag className="h-4 w-4 text-[color:var(--gold)]" />
+                      <p className="eyebrow !mb-0">Your cart</p>
+                    </div>
+                    <ul className="space-y-2 text-sm">
+                      {cartItems.map((item) => (
+                        <li key={item.slug} className="flex justify-between gap-4">
+                          <span>{item.name} × {item.quantity}</span>
+                          <span>₹{item.price * item.quantity}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-4 font-display text-xl text-[color:var(--chocolate)]">
+                      Estimated total: ₹{cartSubtotal}
+                    </p>
+                  </div>
+                )}
+                {isBrownies && !hasCart && (
+                  <>
                     <Field label="Flavour">
                       <select value={form.flavour} onChange={(e) => update("flavour", e.target.value)} className={inputCls}>
                         {flavoursList.map((f) => <option key={f}>{f}</option>)}
                       </select>
                     </Field>
-                  )}
-                  {form.type === "Brownie Cake" && (
-                    <Field label="Weight">
-                      <ChipGroup options={weights} value={form.weight} onChange={(v) => update("weight", v)} />
+                    <Field label="Number of Pieces">
+                      <ChipGroup options={browniePieces} value={form.browniePieces} onChange={(v) => update("browniePieces", v)} />
                     </Field>
-                  )}
-                  {form.type === "Brownies" && (
-                    <Field label="Quantity">
-                      <input value={form.browniePieces} onChange={(e) => update("browniePieces", e.target.value)} className={inputCls} placeholder="e.g. 12 pieces" />
+                  </>
+                )}
+
+                {/* BROWNIE CAKE: flavour + weight */}
+                {isBrownieCake && (
+                  <>
+                    <Field label="Flavour">
+                      <select value={form.flavour} onChange={(e) => update("flavour", e.target.value)} className={inputCls}>
+                        {flavoursList.map((f) => <option key={f}>{f}</option>)}
+                      </select>
                     </Field>
-                  )}
+                    <Field label="Weight / Size">
+                      <ChipGroup options={cakeWeights} value={form.weight} onChange={(v) => update("weight", v)} />
+                    </Field>
+                  </>
+                )}
+
+                {/* GIFT BOX: theme + qty + budget */}
+                {isGiftBox && (
+                  <>
+                    <Field label="Theme" full>
+                      <select value={form.giftTheme} onChange={(e) => update("giftTheme", e.target.value)} className={inputCls}>
+                        {giftThemes.map((t) => <option key={t}>{t}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="Number of Gift Boxes">
+                      <select value={form.giftQty} onChange={(e) => update("giftQty", e.target.value)} className={inputCls}>
+                        {giftQtyOptions.map((o) => <option key={o}>{o}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="Budget per Box (Optional)">
+                      <select value={form.giftBudget} onChange={(e) => update("giftBudget", e.target.value)} className={inputCls}>
+                        <option value="">Select a range</option>
+                        {giftBudgetOptions.map((o) => <option key={o}>{o}</option>)}
+                      </select>
+                    </Field>
+                    <div className="sm:col-span-2 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 p-5 text-sm text-muted-foreground">
+                      <p>Every gift box is handcrafted and customized based on your requirements.</p>
+                      <p className="mt-1">Submit your enquiry and we'll get back to you with a personalized quotation within 24 hours.</p>
+                    </div>
+                  </>
+                )}
+
+                {/* BULK / CORPORATE */}
+                {isCorporate && (
+                  <>
+                    <Field label="Company Name" full>
+                      <input value={form.companyName} onChange={(e) => update("companyName", e.target.value)} className={inputCls} placeholder="Your company name" />
+                    </Field>
+                    <Field label="Number of Boxes Required">
+                      <select value={form.corporateBoxes} onChange={(e) => update("corporateBoxes", e.target.value)} className={inputCls}>
+                        {corporateBoxOptions.map((o) => <option key={o}>{o}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="Expected Delivery Date">
+                      <input type="date" value={form.corporateDeliveryDate} onChange={(e) => update("corporateDeliveryDate", e.target.value)} className={inputCls} />
+                    </Field>
+                    <Field label="Approximate Budget per Box">
+                      <input value={form.corporateBudgetPerBox} onChange={(e) => update("corporateBudgetPerBox", e.target.value)} className={inputCls} placeholder="e.g. ₹500" />
+                    </Field>
+                    <Field label="Branding Requirements" full>
+                      <div className="flex flex-wrap gap-3 mt-1">
+                        {brandingOptions.map((opt) => (
+                          <label key={opt} className="flex items-center gap-2 cursor-pointer text-sm">
+                            <input
+                              type="checkbox"
+                              checked={form.corporateBranding.includes(opt)}
+                              onChange={() => toggleBranding(opt)}
+                              className="h-4 w-4 rounded border-input accent-[color:var(--chocolate-dark)]"
+                            />
+                            {opt}
+                          </label>
+                        ))}
+                      </div>
+                    </Field>
+                    <Field label="Additional Requirements" full>
+                      <textarea value={form.corporateNotes} onChange={(e) => update("corporateNotes", e.target.value)} className={`${inputCls} min-h-24`} placeholder="Any specific requirements, themes, or instructions." />
+                    </Field>
+                    <div className="sm:col-span-2 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 p-5 text-sm text-muted-foreground">
+                      <p>Every gift box is handcrafted and customized based on your requirements.</p>
+                      <p className="mt-1">Submit your enquiry and we'll get back to you with a personalized quotation within 24 hours.</p>
+                    </div>
+                  </>
+                )}
+              </Fieldset>
+
+              {/* Customisation — only for Brownie Cake */}
+              {isBrownieCake && (
+                <Fieldset title="Customisation" step="03">
+                  <Field label="Cake Message" full>
+                    <input value={form.message} onChange={(e) => update("message", e.target.value)} className={inputCls} placeholder="e.g. Happy Birthday, Aanya!" />
+                  </Field>
+                  <Field label="Theme Request">
+                    <input value={form.theme} onChange={(e) => update("theme", e.target.value)} className={inputCls} placeholder="Floral, minimal, gold accents…" />
+                  </Field>
+                  <Field label="Reference Image (optional)">
+                    <input type="file" accept="image/*" className="block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-[color:var(--chocolate-dark)] file:px-4 file:py-2 file:text-[color:var(--cream)] hover:file:bg-[color:var(--chocolate)]" />
+                  </Field>
                 </Fieldset>
               )}
 
-              <Fieldset title="Customisation" step={hasCart ? "02" : "03"}>
-                <Field label="Cake Message" full>
-                  <input value={form.message} onChange={(e) => update("message", e.target.value)} className={inputCls} placeholder="e.g. Happy Birthday, Aanya!" />
-                </Field>
-                <Field label="Theme / Special Request">
-                  <input value={form.theme} onChange={(e) => update("theme", e.target.value)} className={inputCls} placeholder="Floral, minimal, gold accents…" />
-                </Field>
-              </Fieldset>
-
-              <Fieldset title="Delivery" step={hasCart ? "03" : "04"}>
+              <Fieldset title="Delivery" step={isBrownieCake ? "04" : "03"}>
                 <Field label="How will you receive it?" full>
                   <ChipGroup options={["Pickup", "Delivery"]} value={form.delivery} onChange={(v) => update("delivery", v as Delivery)} />
                 </Field>
@@ -352,27 +449,41 @@ function OrderPage() {
                     </Field>
                   </>
                 )}
-                <Field label="Occasion">
-                  <select value={form.occasion} onChange={(e) => update("occasion", e.target.value)} className={inputCls}>
-                    {occasions.map((o) => <option key={o}>{o}</option>)}
-                  </select>
-                </Field>
+                {!isCorporate && (
+                  <Field label="Occasion">
+                    <select value={form.occasion} onChange={(e) => update("occasion", e.target.value)} className={inputCls}>
+                      {occasions.map((o) => <option key={o}>{o}</option>)}
+                    </select>
+                  </Field>
+                )}
                 <Field label="Date Required" required>
                   <input required type="date" value={form.date} onChange={(e) => update("date", e.target.value)} className={inputCls} />
                 </Field>
-                <Field label="Additional Notes" full>
-                  <textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} className={`${inputCls} min-h-24`} placeholder="Allergies, decorations, anything else." />
-                </Field>
+                {!isCorporate && (
+                  <Field label="Additional Notes" full>
+                    <textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} className={`${inputCls} min-h-24`} placeholder="Allergies, decorations, anything else." />
+                  </Field>
+                )}
               </Fieldset>
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
-                <p className="text-xs text-muted-foreground">By submitting, you agree to be contacted for order confirmation.</p>
+                <p className="text-xs text-muted-foreground">
+                  By submitting, you agree to be contacted for order confirmation.
+                </p>
                 <div className="flex flex-wrap gap-3">
-                  <a href={`https://wa.me/918208257574?text=${waMessage}`} target="_blank" rel="noreferrer" className="btn-outline">
+                  <a
+                    href={`https://wa.me/918208257574?text=${waMessage}`}
+                    target="_blank" rel="noreferrer"
+                    className="btn-outline"
+                  >
                     <MessageCircle className="h-4 w-4" /> Send on WhatsApp instead
                   </a>
                   <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-60">
-                    {submitting ? (<><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>) : "Submit Enquiry"}
+                    {submitting
+                      ? (<><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>)
+                      : isCorporate || isGiftBox
+                        ? "Submit Gift Box Enquiry"
+                        : "Submit Enquiry"}
                   </button>
                 </div>
               </div>
@@ -399,8 +510,12 @@ function OrderPage() {
               </div>
               <div className="rounded-2xl border border-border bg-[color:var(--cream-dark)]/40 p-7">
                 <p className="font-display text-xl">Need it sooner?</p>
-                <p className="mt-2 text-sm text-muted-foreground">WhatsApp is the fastest way to reach us — we usually reply within an hour.</p>
-                <a href="https://wa.me/918208257574" target="_blank" rel="noreferrer" className="btn-gold mt-5">WhatsApp Us</a>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  WhatsApp is the fastest way to reach us — we usually reply within an hour.
+                </p>
+                <a href="https://wa.me/918208257574" target="_blank" rel="noreferrer" className="btn-gold mt-5">
+                  WhatsApp Us
+                </a>
               </div>
             </aside>
           </Reveal>
@@ -410,7 +525,8 @@ function OrderPage() {
   );
 }
 
-const inputCls = "w-full rounded-md border border-input bg-background px-4 py-3 text-sm outline-none transition focus:border-[color:var(--gold)] focus:ring-2 focus:ring-[color:var(--gold)]/30";
+const inputCls =
+  "w-full rounded-md border border-input bg-background px-4 py-3 text-sm outline-none transition focus:border-[color:var(--gold)] focus:ring-2 focus:ring-[color:var(--gold)]/30";
 
 function Fieldset({ title, step, children }: { title: string; step: string; children: React.ReactNode }) {
   return (
@@ -441,9 +557,17 @@ function ChipGroup<T extends string>({ options, value, onChange }: { options: re
       {options.map((o) => {
         const active = o === value;
         return (
-          <button key={o} type="button" onClick={() => onChange(o)}
-            className={`rounded-full border px-4 py-2 text-sm transition ${active ? "border-[color:var(--chocolate-dark)] bg-[color:var(--chocolate-dark)] text-[color:var(--cream)]" : "border-border bg-background hover:border-[color:var(--gold)]"}`}
-            aria-pressed={active}>
+          <button
+            key={o}
+            type="button"
+            onClick={() => onChange(o)}
+            className={`rounded-full border px-4 py-2 text-sm transition ${
+              active
+                ? "border-[color:var(--chocolate-dark)] bg-[color:var(--chocolate-dark)] text-[color:var(--cream)]"
+                : "border-border bg-background hover:border-[color:var(--gold)]"
+            }`}
+            aria-pressed={active}
+          >
             {o}
           </button>
         );
@@ -452,30 +576,98 @@ function ChipGroup<T extends string>({ options, value, onChange }: { options: re
   );
 }
 
-function DeliveryEstimateCard({ estimate, pincode }: { estimate: ReturnType<typeof estimateDelivery>; pincode: string }) {
+function DeliveryEstimateCard({
+  estimate,
+  pincode,
+}: {
+  estimate: ReturnType<typeof estimateDelivery>;
+  pincode: string;
+}) {
   if (!pincode) return null;
-  const headerCls = "mt-4 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 p-5";
-  if (estimate.kind === "invalid") return <div className={headerCls}><p className="text-sm text-muted-foreground">Enter a valid 6-digit pincode to see an estimated delivery charge.</p></div>;
-  if (estimate.kind === "unknown") return (
-    <div className={headerCls}>
-      <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-[color:var(--gold)]" /><p className="eyebrow !mb-0">Estimated Delivery Charge</p></div>
-      <p className="mt-3 font-display text-2xl">Contact for Quote</p>
-      <p className="mt-2 text-xs text-muted-foreground">We don't have this pincode in our local zones yet — WhatsApp us to confirm.</p>
-    </div>
+
+  const headerCls =
+    "mt-4 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 p-5";
+
+  if (estimate.kind === "invalid") {
+    return (
+      <div className={headerCls}>
+        <p className="text-sm text-muted-foreground">
+          Enter a valid 6-digit pincode to see an estimated delivery charge.
+        </p>
+      </div>
+    );
+  }
+
+  const whatsappQuoteText = encodeURIComponent(
+    `Hi Grain Crumbs! I'd like to confirm delivery availability and charges for my location (pincode: ${pincode}). Can you help?`
   );
-  if (estimate.kind === "quote") return (
-    <div className={headerCls}>
-      <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-[color:var(--gold)]" /><p className="eyebrow !mb-0">Estimated Delivery Charge</p></div>
-      <p className="mt-3 font-display text-2xl">Contact for Quote</p>
-      <p className="mt-1 text-xs text-muted-foreground">~{estimate.km} km from Kharadi · {estimate.label}</p>
-    </div>
-  );
+  const whatsappQuoteUrl = `https://wa.me/918208257574?text=${whatsappQuoteText}`;
+
+  if (estimate.kind === "unknown") {
+    return (
+      <div className={headerCls}>
+        <div className="flex items-center gap-2 text-[color:var(--chocolate-dark)]">
+          <MapPin className="h-4 w-4 text-[color:var(--gold)]" />
+          <p className="eyebrow !mb-0">Contact for Quote</p>
+        </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Please WhatsApp us to confirm delivery availability and exact charges for your location.
+        </p>
+        <a
+          href={whatsappQuoteUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 inline-flex items-center gap-2 rounded-full bg-[color:var(--gold)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--chocolate-dark)] hover:opacity-90 transition-opacity"
+        >
+          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp Us
+        </a>
+      </div>
+    );
+  }
+
+  if (estimate.kind === "quote") {
+    return (
+      <div className={headerCls}>
+        <div className="flex items-center gap-2 text-[color:var(--chocolate-dark)]">
+          <MapPin className="h-4 w-4 text-[color:var(--gold)]" />
+          <p className="eyebrow !mb-0">Contact for Quote</p>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          ~{estimate.km} km from Kharadi · {estimate.label}
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Please WhatsApp us to confirm delivery availability and exact charges for your location.
+        </p>
+        <a
+          href={whatsappQuoteUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 inline-flex items-center gap-2 rounded-full bg-[color:var(--gold)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--chocolate-dark)] hover:opacity-90 transition-opacity"
+        >
+          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp Us
+        </a>
+      </div>
+    );
+  }
+
   return (
     <div className={headerCls}>
-      <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-[color:var(--gold)]" /><p className="eyebrow !mb-0">Estimated Delivery Charge</p></div>
-      <p className="mt-3 font-display text-3xl text-[color:var(--chocolate-dark)]">{estimate.charge} <span className="text-sm font-normal text-muted-foreground">(Approx.)</span></p>
-      <p className="mt-1 text-xs text-muted-foreground">~{estimate.km} km from Kharadi · {estimate.label}</p>
-      <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">* Final delivery charges may vary. This estimate is for reference only.</p>
+      <div className="flex items-center gap-2 text-[color:var(--chocolate-dark)]">
+        <MapPin className="h-4 w-4 text-[color:var(--gold)]" />
+        <p className="eyebrow !mb-0">Estimated Delivery Charge</p>
+      </div>
+      <p className="mt-3 font-display text-3xl text-[color:var(--chocolate-dark)]">
+        {estimate.charge}{" "}
+        <span className="text-sm font-normal text-muted-foreground">(Approx.)</span>
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        ~{estimate.km} km from Kharadi · {estimate.label}
+      </p>
+      <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+        * Final delivery charges may vary based on exact location, order size, and
+        delivery partner availability. This estimate is shown for reference only and
+        is not added to your order total.
+      </p>
     </div>
   );
 }
