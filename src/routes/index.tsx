@@ -236,14 +236,14 @@ const collections = [
     ],
   },
   {
-    name: "Cookie Tins",
+    name: "Cookie Cake Tins",
     status: "Coming soon",
     available: false,
     to: "/cookie-tins" as const,
     points: [
-      "Premium millet cookies",
-      "Keepsake gifting tins",
-      "Curated flavour mix",
+      "Premium Oozy Cookie Cake Tins",
+      "Keepsake Gifting Tins",
+      "In Scrumptious Flavours",
     ],
   },
 ];
