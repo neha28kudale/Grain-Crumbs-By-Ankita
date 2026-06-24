@@ -440,20 +440,14 @@ export const Route = createFileRoute("/cookie-tins")({
   component: Page,
 });
 
-// const classicBenefits = [
-//   { icon: Star, label: "Bakery-style goodness" },
-//   { icon: Cookie, label: "Freshly baked in small batches" },
-//   { icon: Gift, label: "Perfect for gifting" },
-//   { icon: Sparkles, label: "Rich and indulgent flavours" },
-//   { icon: Heart, label: "Handcrafted with care" },
-// ];
 const classicBenefits = [
-  { label: "⭐ Authentic bakery-style experience" },
-  { label: "🍪 Premium butter, maida & chocolate" },
-  { label: "🎁 Perfect for celebrations & gifting" },
-  { label: "👨‍👩‍👧 Made for sharing special moments" },
-  { label: "✨ Rich, indulgent and nostalgic flavours" },
+  { icon: Star, label: "Bakery-style goodness" },
+  { icon: Cookie, label: "Freshly baked in small batches" },
+  { icon: Gift, label: "Perfect for gifting" },
+  { icon: Sparkles, label: "Rich and indulgent flavours" },
+  { icon: Heart, label: "Handcrafted with care" },
 ];
+
 const milletBenefits = [
   { icon: Wheat, label: "Crafted with wholesome millets" },
   { icon: Leaf, label: "Sweetened with jaggery" },
