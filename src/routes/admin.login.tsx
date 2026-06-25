@@ -114,7 +114,7 @@ function AdminLogin() {
             onClick={() => { setMode(mode === "signin" ? "bootstrap" : "signin"); setErr(null); }}
             className="mt-5 text-xs uppercase tracking-[0.18em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           >
-            {mode === "signin" ? "": "Back to sign in"}
+            {mode === "signin" ? "First time? Create admin account" : "Back to sign in"}
           </button>
         </div>
       </div>
