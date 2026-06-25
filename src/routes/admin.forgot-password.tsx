@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, KeyRound, Loader2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { resetAdminPassword, verifyAdminEmail } from "@/lib/reset-admin-password.functions";
 
 export const Route = createFileRoute("/admin/forgot-password")({
   head: () => ({
@@ -28,12 +30,8 @@ const inputCls =
 
 function ForgotPasswordPage() {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/admin" });
-    });
-  }, [navigate]);
+  const resetPassword = useServerFn(resetAdminPassword);
+  const checkAdminEmail = useServerFn(verifyAdminEmail);
 
   const [step, setStep]               = useState<Step>("email");
   const [adminEmail, setAdminEmail]   = useState("");
@@ -49,8 +47,31 @@ function ForgotPasswordPage() {
   const [otpExpiry, setOtpExpiry]           = useState(0);
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  // Supabase session obtained after OTP sign-in — needed to update password
-  const [recoverySession, setRecoverySession] = useState<any>(null);
+  // Handle Supabase recovery links from older reset emails (type=recovery in URL hash)
+  useEffect(() => {
+    const hash = window.location.hash.replace(/^#/, "");
+    if (!hash.includes("type=recovery")) return;
+
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
+    if (!accessToken || !refreshToken) return;
+
+    supabase.auth
+      .setSession({ access_token: accessToken, refresh_token: refreshToken })
+      .then(({ data, error }) => {
+        if (error || !data.session) return;
+        setAdminEmail(data.session.user.email ?? "");
+        setStep("reset");
+        window.history.replaceState(null, "", window.location.pathname);
+      });
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session && step === "email") navigate({ to: "/admin" });
+    });
+  }, [navigate, step]);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -87,6 +108,8 @@ function ForgotPasswordPage() {
     try {
       if (!adminEmail.trim() || !adminEmail.includes("@"))
         throw new Error("Please enter a valid email address.");
+
+      await checkAdminEmail({ data: { email: adminEmail.trim() } });
 
       const otp = generateOtp();
       await sendOtpEmail(otp);
@@ -140,17 +163,7 @@ function ForgotPasswordPage() {
 
     setBusy(true);
     try {
-      // Use Supabase OTP sign-in so we get a valid session to call updateUser
-      // We send a Supabase magic-link OTP to the admin email silently,
-      // then verify it — this gives us an authenticated session.
-      const { error: otpErr } = await supabase.auth.signInWithOtp({
-        email: adminEmail.trim(),
-        options: { shouldCreateUser: false },
-      });
-      if (otpErr) throw new Error("Could not initiate session. Please try again.");
-
-      // Store that OTP was verified by us — move to reset step
-      setOtpCode(""); // invalidate our OTP
+      setOtpCode("");
       setStep("reset");
     } catch (e: any) {
       setErr(e?.message ?? "Verification failed. Please try again.");
@@ -175,24 +188,17 @@ function ForgotPasswordPage() {
 
     setBusy(true);
     try {
-      // Check if we have an active session from the magic link
       const { data: sess } = await supabase.auth.getSession();
 
       if (sess.session) {
-        // Session exists — update password directly
         const { error } = await supabase.auth.updateUser({ password: newPw });
         if (error) throw error;
-        setStep("done");
+        await supabase.auth.signOut();
       } else {
-        // No session yet — send Supabase reset email as fallback
-        // but point to OUR domain
-        const { error } = await supabase.auth.resetPasswordForEmail(
-          adminEmail.trim(),
-          { redirectTo: `${window.location.origin}/admin/login` }
-        );
-        if (error) throw error;
-        setStep("done");
+        await resetPassword({ data: { email: adminEmail.trim(), password: newPw } });
       }
+
+      setStep("done");
     } catch (e: any) {
       setErr(e?.message ?? "Failed to update password. Please try again.");
     } finally {

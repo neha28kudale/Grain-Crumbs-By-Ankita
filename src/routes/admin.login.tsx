@@ -20,6 +20,12 @@ function AdminLogin() {
   const bootstrap = useServerFn(bootstrapAdmin);
 
   useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes("type=recovery")) {
+      window.location.replace(`/admin/forgot-password${hash}`);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/admin" });
     });
