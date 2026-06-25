@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -48,30 +48,73 @@ function AdminLogin() {
       <div className="container-prose max-w-md">
         <div className="rounded-[2rem] border border-border bg-card p-8 md:p-10">
           <p className="divider-gold eyebrow">Admin</p>
-          <h1 className="mt-4 font-display text-4xl">{mode === "signin" ? "Sign in" : "Create admin account"}</h1>
+          <h1 className="mt-4 font-display text-4xl">
+            {mode === "signin" ? "Sign in" : "Create admin account"}
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {mode === "signin" ? "Access the Grain Crumbs orders dashboard." : "First-time setup. Only available until the first admin is created."}
+            {mode === "signin"
+              ? "Access the Grain Crumbs orders dashboard."
+              : "First-time setup. Only available until the first admin is created."}
           </p>
+
           <form onSubmit={onSubmit} className="mt-8 space-y-5">
             <label className="block">
-              <span className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Email</span>
-              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-md border border-input bg-background px-4 py-3 text-sm outline-none focus:border-[color:var(--gold)] focus:ring-2 focus:ring-[color:var(--gold)]/30" />
+              <span className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                Email
+              </span>
+              <input
+                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-4 py-3 text-sm outline-none focus:border-[color:var(--gold)] focus:ring-2 focus:ring-[color:var(--gold)]/30"
+              />
             </label>
             <label className="block">
-              <span className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Password</span>
-              <input required type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-md border border-input bg-background px-4 py-3 text-sm outline-none focus:border-[color:var(--gold)] focus:ring-2 focus:ring-[color:var(--gold)]/30" />
+              <span className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                Password
+              </span>
+              <input
+                required
+                type="password"
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-4 py-3 text-sm outline-none focus:border-[color:var(--gold)] focus:ring-2 focus:ring-[color:var(--gold)]/30"
+              />
             </label>
+
             {err && <p className="text-sm text-destructive">{err}</p>}
-            <button type="submit" disabled={busy} className="btn-primary w-full justify-center disabled:opacity-60">
-              {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Please wait</> : mode === "signin" ? "Sign in" : "Create & sign in"}
+
+            <button
+              type="submit"
+              disabled={busy}
+              className="btn-primary w-full justify-center disabled:opacity-60"
+            >
+              {busy
+                ? <><Loader2 className="h-4 w-4 animate-spin" /> Please wait</>
+                : mode === "signin" ? "Sign in" : "Create & sign in"}
             </button>
           </form>
+
+          {/* Forgot password — only shown in sign in mode */}
+          {mode === "signin" && (
+            <div className="mt-4 text-center">
+              <Link
+                to="/admin/forgot-password"
+                className="text-xs uppercase tracking-[0.18em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => { setMode(mode === "signin" ? "bootstrap" : "signin"); setErr(null); }}
-            className="mt-6 text-xs uppercase tracking-[0.18em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            className="mt-5 text-xs uppercase tracking-[0.18em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           >
-            {mode === "signin" ? "First time? Create admin account" : "Back to sign in"}
+            {mode === "signin" ? "": "Back to sign in"}
           </button>
         </div>
       </div>
