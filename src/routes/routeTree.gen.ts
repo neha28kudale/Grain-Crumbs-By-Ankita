@@ -114,9 +114,9 @@ export interface FileRoutesByFullPath {
   '/grain-crumbs-pro': typeof GrainCrumbsProRoute
   '/order': typeof OrderRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/admin/change-password': typeof AdminChangePasswordRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/change-password': typeof AdminChangePasswordRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -131,9 +131,9 @@ export interface FileRoutesByTo {
   '/grain-crumbs-pro': typeof GrainCrumbsProRoute
   '/order': typeof OrderRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/admin/change-password': typeof AdminChangePasswordRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/change-password': typeof AdminChangePasswordRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -149,9 +149,9 @@ export interface FileRoutesById {
   '/grain-crumbs-pro': typeof GrainCrumbsProRoute
   '/order': typeof OrderRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/admin/change-password': typeof AdminChangePasswordRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/change-password': typeof AdminChangePasswordRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -168,9 +168,9 @@ export interface FileRouteTypes {
     | '/grain-crumbs-pro'
     | '/order'
     | '/sitemap.xml'
-    | '/admin/change-password'
     | '/admin/login'
     | '/admin/'
+    | '/admin/change-password'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -185,9 +185,9 @@ export interface FileRouteTypes {
     | '/grain-crumbs-pro'
     | '/order'
     | '/sitemap.xml'
-    | '/admin/change-password'
     | '/admin/login'
     | '/admin'
+    | '/admin/change-password'
   id:
     | '__root__'
     | '/'
@@ -202,9 +202,9 @@ export interface FileRouteTypes {
     | '/grain-crumbs-pro'
     | '/order'
     | '/sitemap.xml'
-    | '/admin/change-password'
     | '/admin/login'
     | '/admin/'
+    | '/admin/change-password'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -220,9 +220,9 @@ export interface RootRouteChildren {
   GrainCrumbsProRoute: typeof GrainCrumbsProRoute
   OrderRoute: typeof OrderRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  AdminChangePasswordRoute: typeof AdminChangePasswordRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminChangePasswordRoute: typeof AdminChangePasswordRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -348,9 +348,9 @@ const rootRouteChildren: RootRouteChildren = {
   GrainCrumbsProRoute: GrainCrumbsProRoute,
   OrderRoute: OrderRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  AdminChangePasswordRoute: AdminChangePasswordRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminChangePasswordRoute: AdminChangePasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
