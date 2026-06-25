@@ -22,4 +22,10 @@ export default defineConfig({
       entry: "server",
     },
   },
+  vite: {
+    build: {
+      // Suppress noisy size warnings for expected large vendor chunks (React, Router, Supabase).
+      chunkSizeWarningLimit: 1000,
+    },
+  },
 });
