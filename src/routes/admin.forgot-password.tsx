@@ -271,7 +271,7 @@ function ForgotPasswordPage() {
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     className={inputCls}
-                    placeholder="thegraincrumbs@gmail.com"
+                    // placeholder="thegraincrumbs@gmail.com"
                     autoComplete="email"
                   />
                 </label>
