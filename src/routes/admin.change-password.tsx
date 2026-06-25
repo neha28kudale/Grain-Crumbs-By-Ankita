@@ -13,11 +13,11 @@ export const Route = createFileRoute("/admin/change-password")({
   component: ChangePasswordPage,
 });
 
-// ── EmailJS config (same service used for order confirmations) ────────────────
+// ── EmailJS config ────────────────────────────────────────────────────────────
 const EMAILJS_SERVICE_ID  = "service_o3pbjwb";
-const EMAILJS_TEMPLATE_ID = "template_9mm79jb";   // dedicated OTP template
+const EMAILJS_TEMPLATE_ID = "template_144sxrs";       // combined alert + OTP template
 const EMAILJS_PUBLIC_KEY  = "P8p-EPatFJBMOHmsz";
-const ADMIN_EMAIL         = "thegraincrumbs@gmail.com";
+const PERSONAL_EMAIL      = "ankita.junankar@gmail.com"; // only this gets the email
 
 // OTP expires after 10 minutes
 const OTP_TTL_MS = 10 * 60 * 1000;
@@ -38,20 +38,20 @@ function ChangePasswordPage() {
   }, [navigate]);
 
   // ── State ──────────────────────────────────────────────────────────────────
-  const [step, setStep]             = useState<Step>("form");
-  const [currentPw, setCurrentPw]   = useState("");
-  const [newPw, setNewPw]           = useState("");
-  const [confirmPw, setConfirmPw]   = useState("");
-  const [otpInput, setOtpInput]     = useState("");
-  const [busy, setBusy]             = useState(false);
-  const [err, setErr]               = useState<string | null>(null);
+  const [step, setStep]               = useState<Step>("form");
+  const [currentPw, setCurrentPw]     = useState("");
+  const [newPw, setNewPw]             = useState("");
+  const [confirmPw, setConfirmPw]     = useState("");
+  const [otpInput, setOtpInput]       = useState("");
+  const [busy, setBusy]               = useState(false);
+  const [err, setErr]                 = useState<string | null>(null);
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew]         = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // OTP kept only in memory — never persisted to DB or localStorage
-  const [otpCode, setOtpCode]       = useState<string>("");
-  const [otpExpiry, setOtpExpiry]   = useState<number>(0);
+  // OTP kept only in memory — never persisted
+  const [otpCode, setOtpCode]               = useState<string>("");
+  const [otpExpiry, setOtpExpiry]           = useState<number>(0);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   // Countdown timer for resend cooldown
@@ -65,7 +65,7 @@ function ChangePasswordPage() {
   const generateOtp = () =>
     String(Math.floor(100000 + Math.random() * 900000));
 
-  const sendOtpEmail = async (otp: string) => {
+  const sendEmail = async (otp: string, adminEmail: string) => {
     const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -74,19 +74,17 @@ function ChangePasswordPage() {
         template_id: EMAILJS_TEMPLATE_ID,
         user_id:     EMAILJS_PUBLIC_KEY,
         template_params: {
-          to_email:      ADMIN_EMAIL,
-          customer_name: "Admin",
-          order_number:  otp,
-          product_type:  "Password Change OTP — expires in 10 minutes",
-          delivery:      "Admin Panel · Grain Crumbs",
-          date_required: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+          to_email:    PERSONAL_EMAIL,
+          admin_email: adminEmail,
+          otp:         otp,
+          time:        new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
         },
       }),
     });
-    if (!res.ok) throw new Error("Failed to send OTP email. Please try again.");
+    if (!res.ok) throw new Error("Failed to send verification email. Please try again.");
   };
 
-  // ── Step 1: Validate passwords → verify current pw → send OTP ─────────────
+  // ── Step 1: Validate → verify current pw → send email ─────────────────────
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
@@ -106,7 +104,6 @@ function ChangePasswordPage() {
 
     setBusy(true);
     try {
-      // Verify current password by re-signing in
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) throw new Error("Session expired. Please sign in again.");
 
@@ -116,9 +113,8 @@ function ChangePasswordPage() {
       });
       if (signInErr) throw new Error("Current password is incorrect.");
 
-      // Generate & send OTP
       const otp = generateOtp();
-      await sendOtpEmail(otp);
+      await sendEmail(otp, sess.session.user.email!);
 
       setOtpCode(otp);
       setOtpExpiry(Date.now() + OTP_TTL_MS);
@@ -136,8 +132,9 @@ function ChangePasswordPage() {
     setErr(null);
     setBusy(true);
     try {
+      const { data: sess } = await supabase.auth.getSession();
       const otp = generateOtp();
-      await sendOtpEmail(otp);
+      await sendEmail(otp, sess.session?.user.email ?? "");
       setOtpCode(otp);
       setOtpExpiry(Date.now() + OTP_TTL_MS);
       setResendCooldown(60);
@@ -173,8 +170,7 @@ function ChangePasswordPage() {
       const { error } = await supabase.auth.updateUser({ password: newPw });
       if (error) throw error;
 
-      // Invalidate OTP immediately after use
-      setOtpCode("");
+      setOtpCode(""); // invalidate immediately after use
       setStep("done");
     } catch (e: any) {
       setErr(e?.message ?? "Failed to update password. Please try again.");
@@ -231,7 +227,7 @@ function ChangePasswordPage() {
                 <div>
                   <h1 className="font-display text-2xl">Change Password</h1>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    An OTP will be sent to {ADMIN_EMAIL}
+                    An OTP will be sent to your personal email
                   </p>
                 </div>
               </div>
@@ -351,13 +347,13 @@ function ChangePasswordPage() {
                 <div>
                   <h1 className="font-display text-2xl">Enter OTP</h1>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Sent to {ADMIN_EMAIL}
+                    Sent to your personal email
                   </p>
                 </div>
               </div>
 
               <div className="mb-5 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 px-5 py-4 text-sm text-muted-foreground">
-                Check <strong>{ADMIN_EMAIL}</strong> for a 6-digit OTP.
+                Check your personal email for a <strong>6-digit OTP</strong>.
                 It expires in <strong>10 minutes</strong>.
               </div>
 
