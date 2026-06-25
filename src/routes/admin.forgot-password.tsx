@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, KeyRound, Loader2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { resetAdminPasswordClient, verifyAdminEmailClient } from "@/lib/admin-auth";
 import { resetAdminPassword, verifyAdminEmail } from "@/lib/reset-admin-password.functions";
 
 export const Route = createFileRoute("/admin/forgot-password")({
@@ -30,8 +31,8 @@ const inputCls =
 
 function ForgotPasswordPage() {
   const navigate = useNavigate();
-  const resetPassword = useServerFn(resetAdminPassword);
   const checkAdminEmail = useServerFn(verifyAdminEmail);
+  const resetPassword = useServerFn(resetAdminPassword);
 
   const [step, setStep]               = useState<Step>("email");
   const [adminEmail, setAdminEmail]   = useState("");
@@ -97,7 +98,10 @@ function ForgotPasswordPage() {
         },
       }),
     });
-    if (!res.ok) throw new Error("Failed to send OTP email. Please try again.");
+    if (!res.ok) {
+      const detail = (await res.text()).trim();
+      throw new Error(detail || "Failed to send OTP email. Please try again.");
+    }
   };
 
   // ── Step 1: Send OTP ──────────────────────────────────────────────────────
@@ -109,7 +113,9 @@ function ForgotPasswordPage() {
       if (!adminEmail.trim() || !adminEmail.includes("@"))
         throw new Error("Please enter a valid email address.");
 
-      await checkAdminEmail({ data: { email: adminEmail.trim() } });
+      await verifyAdminEmailClient(adminEmail.trim(), () =>
+        checkAdminEmail({ data: { email: adminEmail.trim() } }),
+      );
 
       const otp = generateOtp();
       await sendOtpEmail(otp);
@@ -195,7 +201,9 @@ function ForgotPasswordPage() {
         if (error) throw error;
         await supabase.auth.signOut();
       } else {
-        await resetPassword({ data: { email: adminEmail.trim(), password: newPw } });
+        await resetAdminPasswordClient(adminEmail.trim(), newPw, () =>
+          resetPassword({ data: { email: adminEmail.trim(), password: newPw } }),
+        );
       }
 
       setStep("done");
