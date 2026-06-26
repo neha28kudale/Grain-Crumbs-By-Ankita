@@ -206,8 +206,9 @@ function OrderPage() {
       if (hasCart) clearCart();
       setSubmitted(true);
     } catch (err) {
-      console.error(err);
-      alert("Could not submit. Please try WhatsApp instead.");
+      console.error("Order submission error:", err);
+      const msg = err instanceof Error ? err.message : String(err);
+      alert(`Could not submit: ${msg}. Please try WhatsApp instead.`);
     } finally {
       setSubmitting(false);
     }
