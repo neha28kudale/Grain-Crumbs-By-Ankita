@@ -134,6 +134,13 @@ function OrderPage() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const email = form.email.trim();
+
+    if (!email) {
+      alert("Please enter your email address so we can send your confirmation email.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const cartNotes = hasCart && form.type === "Brownies"
@@ -143,7 +150,7 @@ function OrderPage() {
       const { data, error } = await supabase.from("orders").insert({
         name: form.name,
         phone: form.phone,
-        email: form.email || null,
+        email,
         product_type: form.type,
         flavour: form.type === "Brownies" || form.type === "Brownie Cake"
           ? hasCart && form.type === "Brownies"
@@ -172,7 +179,7 @@ function OrderPage() {
       setOrderNumber(newOrderNumber);
 
       // Send confirmation email via EmailJS (non-blocking — order still saved if this fails)
-      if (form.email) {
+      if (email) {
         try {
           await fetch("https://api.emailjs.com/api/v1.0/email/send", {
             method: "POST",
@@ -182,7 +189,7 @@ function OrderPage() {
               template_id: EMAILJS_TEMPLATE_ID,
               user_id: EMAILJS_PUBLIC_KEY,
               template_params: {
-                to_email: form.email,
+                to_email: email,
                 customer_name: form.name,
                 order_number: String(newOrderNumber ?? ""),
                 product_type: form.type,
@@ -230,9 +237,9 @@ function OrderPage() {
                   ? "Thank you for your enquiry! We will review your requirements and share a personalized quotation shortly."
                   : "We've received your request and will contact you shortly to confirm availability, pricing and customisation details."}
               </p>
-              {form.email && (
+              {email && (
                 <p className="mt-3 text-sm text-[color:var(--gold)]">
-                  A confirmation email has been sent to <strong>{form.email}</strong>
+                  A confirmation email has been sent to <strong>{email}</strong>
                 </p>
               )}
               <p className="mt-2 text-sm text-muted-foreground">
@@ -285,8 +292,8 @@ function OrderPage() {
                 <Field label="Mobile Number" required>
                   <input required type="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} className={inputCls} placeholder="+91 9XXXX XXXXX" />
                 </Field>
-                <Field label="Email (optional)">
-                  <input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} className={inputCls} placeholder="you@example.com" />
+                <Field label="Email" required>
+                  <input required type="email" value={form.email} onChange={(e) => update("email", e.target.value)} className={inputCls} placeholder="you@example.com" />
                 </Field>
               </Fieldset>
 
