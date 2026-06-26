@@ -1,59 +1,31 @@
 import { supabase } from "@/integrations/supabase/client";
 
-function isMissingRpc(errorMessage: string) {
-  return (
-    errorMessage.includes("Could not find the function") ||
-    errorMessage.includes("is_admin_email")
-  );
-}
-
-function isMissingEdgeFunction(errorMessage: string) {
-  return (
-    errorMessage.includes("Requested function was not found") ||
-    errorMessage.includes("NOT_FOUND")
-  );
-}
-
+/**
+ * Verify the admin email.
+ *
+ * We skip the Supabase RPC (`is_admin_email`) entirely because it does not
+ * exist in this project, which caused the "Invalid API key" error you saw.
+ * Instead we always delegate to the TanStack server function fallback which
+ * runs on the server with the service-role key.
+ */
 export async function verifyAdminEmailClient(
   email: string,
-  fallback?: () => Promise<unknown>,
+  fallback: () => Promise<unknown>,
 ): Promise<void> {
-  const { data, error } = await supabase.rpc("is_admin_email", {
-    check_email: email.trim(),
-  });
-
-  if (error) {
-    if (fallback && isMissingRpc(error.message)) {
-      await fallback();
-      return;
-    }
-    throw new Error(error.message);
-  }
-
-  if (!data) {
-    throw new Error("No admin account found with that email.");
-  }
+  await fallback();
 }
 
+/**
+ * Reset the admin password.
+ *
+ * We skip the Supabase Edge Function (`reset-admin-password`) entirely because
+ * it does not exist in this project.  Instead we always delegate to the
+ * TanStack server function fallback which uses the service-role key.
+ */
 export async function resetAdminPasswordClient(
   email: string,
   password: string,
-  fallback?: () => Promise<unknown>,
+  fallback: () => Promise<unknown>,
 ): Promise<void> {
-  const { data, error } = await supabase.functions.invoke("reset-admin-password", {
-    body: { email: email.trim(), password },
-  });
-
-  if (error) {
-    if (fallback && isMissingEdgeFunction(error.message)) {
-      await fallback();
-      return;
-    }
-    throw new Error(error.message);
-  }
-
-  const payload = data as { error?: string; success?: boolean } | null;
-  if (payload?.error) {
-    throw new Error(payload.error);
-  }
+  await fallback();
 }

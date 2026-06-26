@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, KeyRound, Loader2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { resetAdminPasswordClient, verifyAdminEmailClient } from "@/lib/admin-auth";
+import { verifyAdminEmailClient, resetAdminPasswordClient } from "@/lib/admin-auth";
 import { resetAdminPassword, verifyAdminEmail } from "@/lib/reset-admin-password.functions";
 
 export const Route = createFileRoute("/admin/forgot-password")({
@@ -32,7 +32,7 @@ const inputCls =
 function ForgotPasswordPage() {
   const navigate = useNavigate();
   const checkAdminEmail = useServerFn(verifyAdminEmail);
-  const resetPassword = useServerFn(resetAdminPassword);
+  const resetPassword   = useServerFn(resetAdminPassword);
 
   const [step, setStep]               = useState<Step>("email");
   const [adminEmail, setAdminEmail]   = useState("");
@@ -48,32 +48,14 @@ function ForgotPasswordPage() {
   const [otpExpiry, setOtpExpiry]           = useState(0);
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  // Handle Supabase recovery links from older reset emails (type=recovery in URL hash)
-  useEffect(() => {
-    const hash = window.location.hash.replace(/^#/, "");
-    if (!hash.includes("type=recovery")) return;
-
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get("access_token");
-    const refreshToken = params.get("refresh_token");
-    if (!accessToken || !refreshToken) return;
-
-    supabase.auth
-      .setSession({ access_token: accessToken, refresh_token: refreshToken })
-      .then(({ data, error }) => {
-        if (error || !data.session) return;
-        setAdminEmail(data.session.user.email ?? "");
-        setStep("reset");
-        window.history.replaceState(null, "", window.location.pathname);
-      });
-  }, []);
-
+  // Redirect if already signed in
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session && step === "email") navigate({ to: "/admin" });
     });
   }, [navigate, step]);
 
+  // Resend cooldown countdown
   useEffect(() => {
     if (resendCooldown <= 0) return;
     const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
@@ -104,7 +86,7 @@ function ForgotPasswordPage() {
     }
   };
 
-  // ── Step 1: Send OTP ──────────────────────────────────────────────────────
+  // ── Step 1: Verify email & send OTP ──────────────────────────────────────
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
@@ -113,6 +95,7 @@ function ForgotPasswordPage() {
       if (!adminEmail.trim() || !adminEmail.includes("@"))
         throw new Error("Please enter a valid email address.");
 
+      // verifyAdminEmailClient now always uses the server function (no broken RPC)
       await verifyAdminEmailClient(adminEmail.trim(), () =>
         checkAdminEmail({ data: { email: adminEmail.trim() } }),
       );
@@ -130,7 +113,7 @@ function ForgotPasswordPage() {
     }
   };
 
-  // ── Resend ────────────────────────────────────────────────────────────────
+  // ── Resend OTP ────────────────────────────────────────────────────────────
   const handleResend = async () => {
     setErr(null);
     setBusy(true);
@@ -148,7 +131,7 @@ function ForgotPasswordPage() {
     }
   };
 
-  // ── Step 2: Verify OTP → sign in via magic OTP to get session ─────────────
+  // ── Step 2: Verify OTP ────────────────────────────────────────────────────
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
@@ -167,18 +150,12 @@ function ForgotPasswordPage() {
       return;
     }
 
-    setBusy(true);
-    try {
-      setOtpCode("");
-      setStep("reset");
-    } catch (e: any) {
-      setErr(e?.message ?? "Verification failed. Please try again.");
-    } finally {
-      setBusy(false);
-    }
+    // OTP is valid — advance to reset step
+    setOtpCode(""); // invalidate immediately
+    setStep("reset");
   };
 
-  // ── Step 3: Update password directly ─────────────────────────────────────
+  // ── Step 3: Reset password via server function ────────────────────────────
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
@@ -194,17 +171,14 @@ function ForgotPasswordPage() {
 
     setBusy(true);
     try {
-      const { data: sess } = await supabase.auth.getSession();
-
-      if (sess.session) {
-        const { error } = await supabase.auth.updateUser({ password: newPw });
-        if (error) throw error;
-        await supabase.auth.signOut();
-      } else {
-        await resetAdminPasswordClient(adminEmail.trim(), newPw, () =>
-          resetPassword({ data: { email: adminEmail.trim(), password: newPw } }),
-        );
-      }
+      // FIX: always use the TanStack server function path.
+      // The Supabase Edge Function does not exist in this project, and there
+      // is no active session after an OTP-only flow, so we go directly to the
+      // server fn which uses the service-role key to update the password.
+      // Field name is `password` (was incorrectly `newPassword` in the schema).
+      await resetAdminPasswordClient(adminEmail.trim(), newPw, () =>
+        resetPassword({ data: { email: adminEmail.trim(), password: newPw } }),
+      );
 
       setStep("done");
     } catch (e: any) {
@@ -270,7 +244,7 @@ function ForgotPasswordPage() {
                   <input
                     required type="email" value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
-                    className={inputCls} 
+                    className={inputCls}
                     autoComplete="email"
                   />
                 </label>
