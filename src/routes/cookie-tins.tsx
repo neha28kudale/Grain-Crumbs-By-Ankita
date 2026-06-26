@@ -144,7 +144,6 @@ function Page() {
             <p className="mt-5 text-muted-foreground">For those who love traditional bakery-style cookies.</p>
             <p className="mt-3 text-muted-foreground">Expect rich flavours, comforting textures and familiar favourites — perfect for celebrations, gifting and sharing with loved ones.</p>
 
-            {/* Note box */}
             <div className="mt-5 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/50 p-5">
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--chocolate)]">
                 🍪 A Note From Grain Crumbs
@@ -240,29 +239,32 @@ function Page() {
         </div>
       </section>
 
-      {/* ── COMPARISON ── */}
+      {/* ── COMPARISON TABLE ── */}
       <section className="section bg-[color:var(--chocolate-dark)] text-[color:var(--cream)]">
         <div className="container-prose">
           <Reveal className="mx-auto max-w-2xl text-center">
             <p className="eyebrow text-[color:var(--gold)]">Find Your Perfect Cookie Cake Tin</p>
             <h2 className="mt-3 font-display text-4xl text-[color:var(--cream)] md:text-5xl">Classic or Millet?</h2>
           </Reveal>
-          <Reveal delay={200} className="mt-12 overflow-x-auto">
-            <div className="overflow-hidden rounded-2xl border border-[color:var(--gold)]/30">
-              <table className="w-full text-left text-sm">
+          <Reveal delay={200} className="mt-12">
+            <p className="mb-2 text-center text-[10px] uppercase tracking-[0.18em] text-[color:var(--gold)]/60 md:hidden">
+              ← Scroll to see all →
+            </p>
+            <div className="overflow-x-auto rounded-2xl border border-[color:var(--gold)]/30 [-webkit-overflow-scrolling:touch]">
+              <table className="w-full min-w-[420px] text-left text-sm">
                 <thead>
                   <tr className="bg-[color:var(--chocolate)]/70 text-xs uppercase tracking-[0.2em] text-[color:var(--gold-soft)]">
-                    <th className="px-4 py-5 sm:px-8">Feature</th>
-                    <th className="px-4 py-5 sm:px-8">Classic Collection</th>
-                    <th className="px-4 py-5 text-[color:var(--gold)] sm:px-8">Millet Collection</th>
+                    <th className="px-4 py-5">Feature</th>
+                    <th className="px-4 py-5">Classic Collection</th>
+                    <th className="px-4 py-5 text-[color:var(--gold)]">Millet Collection</th>
                   </tr>
                 </thead>
                 <tbody>
                   {comparisonRows.map((r, i) => (
                     <tr key={r.feature} className={i % 2 ? "bg-white/[0.02]" : ""}>
-                      <td className="px-4 py-4 font-medium uppercase tracking-wider text-[color:var(--gold-soft)] sm:px-8">{r.feature}</td>
-                      <td className="px-4 py-4 text-[color:var(--cream)]/70 sm:px-8">{r.classic}</td>
-                      <td className="px-4 py-4 font-display text-base text-[color:var(--cream)] sm:px-8">{r.millet}</td>
+                      <td className="px-4 py-4 font-medium uppercase tracking-wider text-[color:var(--gold-soft)]">{r.feature}</td>
+                      <td className="px-4 py-4 text-[color:var(--cream)]/70">{r.classic}</td>
+                      <td className="px-4 py-4 font-display text-base text-[color:var(--cream)]">{r.millet}</td>
                     </tr>
                   ))}
                 </tbody>

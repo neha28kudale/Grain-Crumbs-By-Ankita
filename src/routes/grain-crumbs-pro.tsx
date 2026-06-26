@@ -164,7 +164,7 @@ function Page() {
         </div>
       </section>
 
-      {/* ── SECTION 01: MONK FRUIT — text left, image right ── */}
+      {/* ── SECTION 01: MONK FRUIT ── */}
       <section className="section">
         <div className="container-prose grid items-center gap-12 md:grid-cols-2">
           <Reveal>
@@ -201,7 +201,7 @@ function Page() {
         </div>
       </section>
 
-      {/* ── SECTION 02: CLEAN PROTEIN — image left, text right ── */}
+      {/* ── SECTION 02: CLEAN PROTEIN ── */}
       <section className="section bg-[color:var(--cream-dark)]/40">
         <div className="container-prose grid items-center gap-12 md:grid-cols-2">
           <Reveal>
@@ -241,7 +241,7 @@ function Page() {
         </div>
       </section>
 
-      {/* ── SECTION 03: MILLET-BASED — text left, image right ── */}
+      {/* ── SECTION 03: MILLET-BASED ── */}
       <section className="section">
         <div className="container-prose grid items-center gap-12 md:grid-cols-2">
           <Reveal>
@@ -278,7 +278,7 @@ function Page() {
         </div>
       </section>
 
-      {/* ── SECTION 04: PERFORMANCE — image left, text right ── */}
+      {/* ── SECTION 04: PERFORMANCE ── */}
       <section className="section bg-[color:var(--cream-dark)]/40">
         <div className="container-prose grid items-center gap-12 md:grid-cols-2">
           <Reveal>
@@ -324,24 +324,27 @@ function Page() {
               Same Grain Crumbs Soul. Different Nutrition.
             </h2>
           </Reveal>
-          <Reveal delay={200} className="mt-12 overflow-x-auto">
-            <div className="overflow-hidden rounded-2xl border border-[color:var(--gold)]/30">
-              <table className="w-full text-left text-sm">
+          <Reveal delay={200} className="mt-12">
+            <p className="mb-2 text-center text-[10px] uppercase tracking-[0.18em] text-[color:var(--gold)]/60 md:hidden">
+              ← Scroll to see all →
+            </p>
+            <div className="overflow-x-auto rounded-2xl border border-[color:var(--gold)]/30 [-webkit-overflow-scrolling:touch]">
+              <table className="w-full min-w-[520px] text-left text-sm">
                 <thead>
                   <tr className="bg-[color:var(--chocolate)]/70 text-xs uppercase tracking-[0.2em] text-[color:var(--gold-soft)]">
-                    <th className="px-4 py-5 sm:px-8">Feature</th>
-                    <th className="px-4 py-5 sm:px-6">Classic</th>
-                    <th className="px-4 py-5 sm:px-6">Lite</th>
-                    <th className="px-4 py-5 text-[color:var(--gold)] sm:px-6">Pro</th>
+                    <th className="px-4 py-5">Feature</th>
+                    <th className="px-4 py-5">Classic</th>
+                    <th className="px-4 py-5">Lite</th>
+                    <th className="px-4 py-5 text-[color:var(--gold)]">Pro</th>
                   </tr>
                 </thead>
                 <tbody>
                   {comparisonRows.map((r, i) => (
                     <tr key={r.feature} className={i % 2 ? "bg-white/[0.02]" : ""}>
-                      <td className="px-4 py-4 font-medium uppercase tracking-wider text-[color:var(--gold-soft)] sm:px-8">{r.feature}</td>
-                      <td className="px-4 py-4 text-[color:var(--cream)]/60 sm:px-6">{r.classic}</td>
-                      <td className="px-4 py-4 text-[color:var(--cream)]/60 sm:px-6">{r.lite}</td>
-                      <td className="px-4 py-4 font-display text-base text-[color:var(--cream)] sm:px-6">{r.pro}</td>
+                      <td className="px-4 py-4 font-medium uppercase tracking-wider text-[color:var(--gold-soft)]">{r.feature}</td>
+                      <td className="px-4 py-4 text-[color:var(--cream)]/60">{r.classic}</td>
+                      <td className="px-4 py-4 text-[color:var(--cream)]/60">{r.lite}</td>
+                      <td className="px-4 py-4 font-display text-base text-[color:var(--cream)]">{r.pro}</td>
                     </tr>
                   ))}
                 </tbody>

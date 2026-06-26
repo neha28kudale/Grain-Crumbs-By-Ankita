@@ -112,7 +112,7 @@ function Page() {
         </div>
       </section>
 
-      {/* ── SECTION 1: WHY MONK FRUIT — image left, text right ── */}
+      {/* ── SECTION 1: WHY MONK FRUIT ── */}
       <section className="section">
         <div className="container-prose grid items-center gap-12 md:grid-cols-2">
           <Reveal>
@@ -154,7 +154,7 @@ function Page() {
         </div>
       </section>
 
-      {/* ── SECTION 2: MILLET STORY — text left, image right ── */}
+      {/* ── SECTION 2: MILLET STORY ── */}
       <section className="section bg-[color:var(--cream-dark)]/40">
         <div className="container-prose grid items-center gap-12 md:grid-cols-2">
           <Reveal>
@@ -196,7 +196,7 @@ function Page() {
         </div>
       </section>
 
-      {/* ── SECTION 3: PREMIUM CHOCOLATE — image left, text right ── */}
+      {/* ── SECTION 3: PREMIUM CHOCOLATE ── */}
       <section className="section">
         <div className="container-prose grid items-center gap-12 md:grid-cols-2">
           <Reveal>
@@ -246,25 +246,30 @@ function Page() {
               Same soul. Different sweetness.
             </h2>
           </Reveal>
-          <Reveal delay={200} className="mt-12 overflow-hidden rounded-2xl border border-[color:var(--gold)]/30">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="bg-[color:var(--chocolate)]/70 text-xs uppercase tracking-[0.2em] text-[color:var(--gold-soft)]">
-                  <th className="px-4 py-5 sm:px-8">Feature</th>
-                  <th className="px-4 py-5 sm:px-8">Classic</th>
-                  <th className="px-4 py-5 sm:px-8 text-[color:var(--gold)]">Lite</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparisonRows.map((r, i) => (
-                  <tr key={r.feature} className={i % 2 ? "bg-white/[0.02]" : ""}>
-                    <td className="px-4 py-4 font-medium uppercase tracking-wider text-[color:var(--gold-soft)] sm:px-8">{r.feature}</td>
-                    <td className="px-4 py-4 text-[color:var(--cream)]/70 sm:px-8">{r.classic}</td>
-                    <td className="px-4 py-4 font-display text-base text-[color:var(--cream)] sm:px-8">{r.lite}</td>
+          <Reveal delay={200} className="mt-12">
+            <p className="mb-2 text-center text-[10px] uppercase tracking-[0.18em] text-[color:var(--gold)]/60 md:hidden">
+              ← Scroll to see all →
+            </p>
+            <div className="overflow-x-auto rounded-2xl border border-[color:var(--gold)]/30 [-webkit-overflow-scrolling:touch]">
+              <table className="w-full min-w-[420px] text-left text-sm">
+                <thead>
+                  <tr className="bg-[color:var(--chocolate)]/70 text-xs uppercase tracking-[0.2em] text-[color:var(--gold-soft)]">
+                    <th className="px-4 py-5">Feature</th>
+                    <th className="px-4 py-5">Classic</th>
+                    <th className="px-4 py-5 text-[color:var(--gold)]">Lite</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {comparisonRows.map((r, i) => (
+                    <tr key={r.feature} className={i % 2 ? "bg-white/[0.02]" : ""}>
+                      <td className="px-4 py-4 font-medium uppercase tracking-wider text-[color:var(--gold-soft)]">{r.feature}</td>
+                      <td className="px-4 py-4 text-[color:var(--cream)]/70">{r.classic}</td>
+                      <td className="px-4 py-4 font-display text-base text-[color:var(--cream)]">{r.lite}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Reveal>
         </div>
       </section>
