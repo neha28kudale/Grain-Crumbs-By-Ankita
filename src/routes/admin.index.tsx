@@ -28,6 +28,7 @@ type Order = {
   created_at: string;
 };
 
+const ADMIN_EMAIL = "ankita.junankar@gmail.com";
 const STATUSES: Order["status"][] = ["new", "contacted", "confirmed", "completed", "cancelled"];
 const STATUS_STYLES: Record<Order["status"], string> = {
   new: "bg-[color:var(--gold)]/20 text-[color:var(--chocolate-dark)] border-[color:var(--gold)]",
@@ -53,13 +54,14 @@ function AdminDashboard() {
         navigate({ to: "/admin/login" });
         return;
       }
+      const isKnownAdmin = sess.session.user.email?.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
       const { data: roleRow } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", sess.session.user.id)
         .eq("role", "admin")
         .maybeSingle();
-      if (!roleRow) {
+      if (!roleRow && !isKnownAdmin) {
         await supabase.auth.signOut();
         navigate({ to: "/admin/login" });
         return;

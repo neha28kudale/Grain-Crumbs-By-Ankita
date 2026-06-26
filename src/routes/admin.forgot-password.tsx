@@ -180,7 +180,14 @@ function ForgotPasswordPage() {
         resetPassword({ data: { email: adminEmail.trim(), password: newPw } }),
       );
 
-      setStep("done");
+      await supabase.auth.signOut();
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: adminEmail.trim(),
+        password: newPw,
+      });
+      if (signInErr) throw signInErr;
+
+      navigate({ to: "/admin" });
     } catch (e: any) {
       setErr(e?.message ?? "Failed to update password. Please try again.");
     } finally {

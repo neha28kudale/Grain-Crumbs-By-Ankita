@@ -39,8 +39,9 @@ function AdminLogin() {
       if (mode === "bootstrap") {
         await bootstrap({ data: { email, password } });
       }
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      if (!data.session) throw new Error("Unable to create a session. Please try again.");
       navigate({ to: "/admin" });
     } catch (e: any) {
       setErr(e?.message ?? "Failed");

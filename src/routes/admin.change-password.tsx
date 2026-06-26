@@ -167,8 +167,18 @@ function ChangePasswordPage() {
 
     setBusy(true);
     try {
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session?.user.email) throw new Error("Session expired. Please sign in again.");
+
       const { error } = await supabase.auth.updateUser({ password: newPw });
       if (error) throw error;
+
+      await supabase.auth.signOut();
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: sess.session.user.email,
+        password: newPw,
+      });
+      if (signInErr) throw signInErr;
 
       setOtpCode(""); // invalidate immediately after use
       setStep("done");
