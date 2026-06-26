@@ -238,9 +238,9 @@ function OrderPage() {
                   ? "Thank you for your enquiry! We will review your requirements and share a personalized quotation shortly."
                   : "We've received your request and will contact you shortly to confirm availability, pricing and customisation details."}
               </p>
-              {email && (
+              {form.email && (
                 <p className="mt-3 text-sm text-[color:var(--gold)]">
-                  A confirmation email has been sent to <strong>{email}</strong>
+                  A confirmation email has been sent to <strong>{form.email}</strong>
                 </p>
               )}
               <p className="mt-2 text-sm text-muted-foreground">
