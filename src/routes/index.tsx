@@ -182,12 +182,11 @@ function WhyUs() {
               loading="lazy"
               className="h-72 w-full object-cover md:h-[420px]"
             />
-            
             <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--chocolate-dark)]/70 via-transparent to-transparent" />
             <div className="absolute bottom-6 left-6 right-6 md:bottom-10 md:left-10">
-            <p className="eyebrow font-semibold text-white tracking-[0.2em] uppercase [text-shadow:0_3px_10px_rgba(0,0,0,1)]">
-  Ingredient-first
-</p>
+              <p className="eyebrow font-semibold text-white tracking-[0.2em] uppercase [text-shadow:0_3px_10px_rgba(0,0,0,1)]">
+                Ingredient-first
+              </p>
               <p className="mt-2 max-w-xl font-display text-2xl text-white md:text-3xl [text-shadow:0_2px_8px_rgba(0,0,0,0.55)]">
                 Millets you'd cook with at home. Chocolate you'd never compromise on.
               </p>
@@ -410,25 +409,30 @@ function ComparisonTable() {
           </h2>
         </Reveal>
 
-        <Reveal delay={200} className="mt-12 overflow-hidden rounded-2xl border border-[color:var(--gold)]/30">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="bg-[color:var(--chocolate)]/70 text-xs uppercase tracking-[0.2em] text-[color:var(--gold-soft)]">
-                <th className="px-4 py-5 sm:px-8"> </th>
-                <th className="px-4 py-5 sm:px-8">Grain Crumbs</th>
-                <th className="px-4 py-5 sm:px-8 opacity-70">Typical Bakery</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr key={r[0]} className={i % 2 ? "bg-white/[0.02]" : ""}>
-                  <td className="px-4 py-5 font-medium uppercase tracking-wider text-[color:var(--gold-soft)] sm:px-8">{r[0]}</td>
-                  <td className="px-4 py-5 font-display text-lg text-[color:var(--cream)] sm:px-8">{r[1]}</td>
-                  <td className="px-4 py-5 text-[color:var(--cream)]/60 sm:px-8 line-through decoration-[color:var(--cream)]/30">{r[2]}</td>
+        <Reveal delay={200} className="mt-12">
+          <p className="mb-2 text-center text-[10px] uppercase tracking-[0.18em] text-[color:var(--gold)]/60 md:hidden">
+            ← Scroll to see all →
+          </p>
+          <div className="overflow-x-auto rounded-2xl border border-[color:var(--gold)]/30 [-webkit-overflow-scrolling:touch]">
+            <table className="w-full min-w-[380px] text-left text-sm">
+              <thead>
+                <tr className="bg-[color:var(--chocolate)]/70 text-xs uppercase tracking-[0.2em] text-[color:var(--gold-soft)]">
+                  <th className="px-4 py-5"> </th>
+                  <th className="px-4 py-5">Grain Crumbs</th>
+                  <th className="px-4 py-5 opacity-70">Typical Bakery</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr key={r[0]} className={i % 2 ? "bg-white/[0.02]" : ""}>
+                    <td className="px-4 py-5 font-medium uppercase tracking-wider text-[color:var(--gold-soft)]">{r[0]}</td>
+                    <td className="px-4 py-5 font-display text-lg text-[color:var(--cream)]">{r[1]}</td>
+                    <td className="px-4 py-5 text-[color:var(--cream)]/60 line-through decoration-[color:var(--cream)]/30">{r[2]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Reveal>
       </div>
     </section>
@@ -511,10 +515,8 @@ function BehindTheScenes() {
             rel="noreferrer"
             className="group relative mx-auto flex max-w-3xl flex-col items-center overflow-hidden rounded-[2rem] border border-[color:var(--gold)]/30 bg-[color:var(--chocolate)] transition-all hover:border-[color:var(--gold)]/60 hover:shadow-[0_24px_60px_-20px_rgba(0,0,0,0.6)]"
           >
-            {/* Thumbnail area */}
             <div className="relative w-full bg-[color:var(--chocolate-dark)] aspect-video flex items-center justify-center">
               <div className="grain absolute inset-0 opacity-20" aria-hidden />
-              {/* Play button */}
               <div className="relative z-10 flex flex-col items-center gap-4">
                 <div className="grid h-20 w-20 place-items-center rounded-full bg-red-600 shadow-[0_8px_32px_rgba(220,38,38,0.5)] transition-transform duration-300 group-hover:scale-110">
                   <Youtube className="h-9 w-9 text-white" />
@@ -525,7 +527,6 @@ function BehindTheScenes() {
               </div>
             </div>
 
-            {/* Card footer */}
             <div className="flex w-full items-center justify-between gap-4 px-8 py-5">
               <div className="flex items-center gap-3">
                 <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-600">
