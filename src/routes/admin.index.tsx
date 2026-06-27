@@ -24,6 +24,7 @@ type Order = {
   occasion: string | null;
   date_required: string | null;
   notes: string | null;
+  image_url: string | null;
   status: "new" | "contacted" | "confirmed" | "completed" | "cancelled";
   created_at: string;
 };
@@ -45,6 +46,7 @@ function AdminDashboard() {
   const [filter, setFilter] = useState<"all" | Order["status"]>("all");
   const [q, setQ] = useState("");
   const [active, setActive] = useState<Order | null>(null);
+  const [lightbox, setLightbox] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,7 +99,7 @@ function AdminDashboard() {
 
   const updateStatus = async (id: string, status: Order["status"]) => {
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
-    if (active?.id === id) setActive({ ...active, status });
+    if (active?.id === id) setActive((prev) => prev ? { ...prev, status } : prev);
     await supabase.from("orders").update({ status }).eq("id", id);
   };
 
@@ -123,7 +125,6 @@ function AdminDashboard() {
             <h1 className="mt-3 font-display text-4xl md:text-5xl">Orders</h1>
             <p className="mt-2 text-sm text-muted-foreground">{filtered.length} of {orders.length} enquiries</p>
           </div>
-          {/* ── Action buttons ── */}
           <div className="flex flex-wrap gap-3">
             <Link to="/admin/change-password" className="btn-outline">
               <KeyRound className="h-4 w-4" /> Change Password
@@ -179,7 +180,7 @@ function AdminDashboard() {
                 {filtered.length === 0 ? (
                   <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">No orders found.</td></tr>
                 ) : filtered.map((o) => (
-                  <tr key={o.id} onClick={() => setActive(o)} className="cursor-pointer border-t border-border hover:bg-[color:var(--cream-dark)]/30">
+                  <tr key={o.id} onClick={() => { setActive(o); setLightbox(false); }} className="cursor-pointer border-t border-border hover:bg-[color:var(--cream-dark)]/30">
                     <td className="px-4 py-3 font-mono text-sm font-semibold text-[color:var(--chocolate-dark)]">#{o.order_number}</td>
                     <td className="px-4 py-3 font-medium">{o.name}</td>
                     <td className="px-4 py-3">{o.phone}</td>
@@ -199,6 +200,7 @@ function AdminDashboard() {
         </div>
       </div>
 
+      {/* Order Detail Modal */}
       {active && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 p-0 md:p-4" onClick={() => setActive(null)}>
           <div onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full overflow-y-auto rounded-t-[1.5rem] md:rounded-[1.5rem] border border-border bg-card p-6 md:max-w-2xl md:p-8">
@@ -230,6 +232,32 @@ function AdminDashboard() {
               <Detail label="Submitted" value={new Date(active.created_at).toLocaleString()} full />
             </dl>
 
+            {/* Reference Image */}
+            {active.image_url && (
+              <div className="mt-6">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Reference Image</p>
+                <div
+                  className="cursor-zoom-in overflow-hidden rounded-xl border border-[color:var(--gold)]/30"
+                  onClick={() => setLightbox(true)}
+                >
+                  <img
+                    src={active.image_url}
+                    alt="Customer reference"
+                    className="max-h-56 w-full object-cover hover:opacity-90 transition-opacity"
+                  />
+                  <p className="px-3 py-2 text-xs text-muted-foreground">Click to view full image</p>
+                </div>
+                <a
+                  href={active.image_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-block text-xs text-[color:var(--gold)] underline underline-offset-2"
+                >
+                  Open in new tab ↗
+                </a>
+              </div>
+            )}
+
             <div className="mt-8 border-t border-border pt-6">
               <p className="eyebrow mb-3">Update status</p>
               <div className="flex flex-wrap gap-2">
@@ -247,6 +275,24 @@ function AdminDashboard() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightbox && active?.image_url && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightbox(false)}
+        >
+          <img
+            src={active.image_url}
+            alt="Reference full view"
+            className="max-h-[90vh] max-w-full rounded-xl object-contain"
+          />
+          <button
+            onClick={() => setLightbox(false)}
+            className="absolute top-4 right-4 text-white text-3xl leading-none hover:opacity-70"
+          >×</button>
         </div>
       )}
     </section>

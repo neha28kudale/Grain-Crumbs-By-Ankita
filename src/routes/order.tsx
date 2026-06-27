@@ -54,6 +54,10 @@ function OrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
 
+  // Reference image state
+  const [referenceImage, setReferenceImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
   const [form, setForm] = useState({
     name: "", phone: "", email: "",
     type: "Brownies" as ProductType,
@@ -92,6 +96,18 @@ function OrderPage() {
         ? f.corporateBranding.filter((b) => b !== option)
         : [...f.corporateBranding, option],
     }));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setReferenceImage(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setImagePreview(null);
+    }
   };
 
   const cartSummary = useMemo(
@@ -143,6 +159,25 @@ function OrderPage() {
 
     setSubmitting(true);
     try {
+      // Upload reference image if provided
+      let imageUrl: string | null = null;
+      if (referenceImage && form.type === "Brownie Cake") {
+        const fileExt = referenceImage.name.split(".").pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("order-images")
+          .upload(fileName, referenceImage, { upsert: false });
+
+        if (uploadError) {
+          console.warn("Image upload failed (order will still be saved):", uploadError);
+        } else {
+          const { data: urlData } = supabase.storage
+            .from("order-images")
+            .getPublicUrl(fileName);
+          imageUrl = urlData.publicUrl;
+        }
+      }
+
       const cartNotes = hasCart && form.type === "Brownies"
         ? [form.notes, `Cart: ${cartSummary} (Est. ₹${cartSubtotal})`].filter(Boolean).join("\n")
         : form.notes || null;
@@ -171,6 +206,7 @@ function OrderPage() {
         occasion: form.type !== "Bulk / Corporate Order" ? form.occasion : null,
         date_required: form.date || null,
         notes: cartNotes,
+        image_url: imageUrl,
       }).select("order_number").single();
 
       if (error) throw error;
@@ -178,7 +214,7 @@ function OrderPage() {
       const newOrderNumber = data?.order_number ?? null;
       setOrderNumber(newOrderNumber);
 
-      // Send confirmation email via EmailJS (non-blocking — order still saved if this fails)
+      // Send confirmation email via EmailJS (non-blocking)
       if (email) {
         try {
           await fetch("https://api.emailjs.com/api/v1.0/email/send", {
@@ -303,7 +339,7 @@ function OrderPage() {
                   <ChipGroup options={productTypes} value={form.type} onChange={(v) => update("type", v)} />
                 </Field>
 
-                {/* BROWNIES: cart summary OR flavour + piece count */}
+                {/* BROWNIES */}
                 {isBrownies && hasCart && (
                   <div className="sm:col-span-2 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 p-5">
                     <div className="flex items-center gap-2 mb-3">
@@ -336,7 +372,7 @@ function OrderPage() {
                   </>
                 )}
 
-                {/* BROWNIE CAKE: flavour + weight */}
+                {/* BROWNIE CAKE */}
                 {isBrownieCake && (
                   <>
                     <Field label="Flavour">
@@ -350,7 +386,7 @@ function OrderPage() {
                   </>
                 )}
 
-                {/* GIFT BOX: theme + qty + budget */}
+                {/* GIFT BOX */}
                 {isGiftBox && (
                   <>
                     <Field label="Theme" full>
@@ -428,8 +464,19 @@ function OrderPage() {
                   <Field label="Theme Request">
                     <input value={form.theme} onChange={(e) => update("theme", e.target.value)} className={inputCls} placeholder="Floral, minimal, gold accents…" />
                   </Field>
-                  <Field label="Reference Image (optional)">
-                    <input type="file" accept="image/*" className="block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-[color:var(--chocolate-dark)] file:px-4 file:py-2 file:text-[color:var(--cream)] hover:file:bg-[color:var(--chocolate)]" />
+                  <Field label="Reference Image (optional)" full>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-[color:var(--chocolate-dark)] file:px-4 file:py-2 file:text-[color:var(--cream)] hover:file:bg-[color:var(--chocolate)]"
+                    />
+                    {imagePreview && (
+                      <div className="mt-3 overflow-hidden rounded-xl border border-[color:var(--gold)]/30">
+                        <img src={imagePreview} alt="Reference preview" className="max-h-48 w-full object-cover" />
+                        <p className="px-3 py-2 text-xs text-muted-foreground">Preview — this image will be sent with your order</p>
+                      </div>
+                    )}
                   </Field>
                 </Fieldset>
               )}
@@ -621,12 +668,8 @@ function DeliveryEstimateCard({
         <p className="mt-2 text-sm text-muted-foreground">
           Please WhatsApp us to confirm delivery availability and exact charges for your location.
         </p>
-        <a
-          href={whatsappQuoteUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-3 inline-flex items-center gap-2 rounded-full bg-[color:var(--gold)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--chocolate-dark)] hover:opacity-90 transition-opacity"
-        >
+        <a href={whatsappQuoteUrl} target="_blank" rel="noreferrer"
+          className="mt-3 inline-flex items-center gap-2 rounded-full bg-[color:var(--gold)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--chocolate-dark)] hover:opacity-90 transition-opacity">
           <MessageCircle className="h-3.5 w-3.5" /> WhatsApp Us
         </a>
       </div>
@@ -646,12 +689,8 @@ function DeliveryEstimateCard({
         <p className="mt-2 text-sm text-muted-foreground">
           Please WhatsApp us to confirm delivery availability and exact charges for your location.
         </p>
-        <a
-          href={whatsappQuoteUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-3 inline-flex items-center gap-2 rounded-full bg-[color:var(--gold)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--chocolate-dark)] hover:opacity-90 transition-opacity"
-        >
+        <a href={whatsappQuoteUrl} target="_blank" rel="noreferrer"
+          className="mt-3 inline-flex items-center gap-2 rounded-full bg-[color:var(--gold)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--chocolate-dark)] hover:opacity-90 transition-opacity">
           <MessageCircle className="h-3.5 w-3.5" /> WhatsApp Us
         </a>
       </div>
