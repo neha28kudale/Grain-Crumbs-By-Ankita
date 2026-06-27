@@ -264,7 +264,7 @@ function Page() {
                     <tr key={r.feature} className={i % 2 ? "bg-white/[0.02]" : ""}>
                       <td className="px-4 py-4 font-medium uppercase tracking-wider text-[color:var(--gold-soft)]">{r.feature}</td>
                       <td className="px-4 py-4 text-[color:var(--cream)]/70">{r.classic}</td>
-                      <td className="px-4 py-4 font-display text-base text-[color:var(--cream)]">{r.lite}</td>
+                      <td className="px-4 py-4 font-semibold text-[color:var(--cream)]">{r.lite}</td>
                     </tr>
                   ))}
                 </tbody>

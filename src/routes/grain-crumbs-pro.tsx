@@ -344,7 +344,7 @@ function Page() {
                       <td className="px-4 py-4 font-medium uppercase tracking-wider text-[color:var(--gold-soft)]">{r.feature}</td>
                       <td className="px-4 py-4 text-[color:var(--cream)]/60">{r.classic}</td>
                       <td className="px-4 py-4 text-[color:var(--cream)]/60">{r.lite}</td>
-                      <td className="px-4 py-4 font-display text-base text-[color:var(--cream)]">{r.pro}</td>
+                      <td className="px-4 py-4 font-semibold text-[color:var(--cream)]">{r.pro}</td>
                     </tr>
                   ))}
                 </tbody>

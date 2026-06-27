@@ -417,7 +417,7 @@ function ComparisonTable() {
             <table className="w-full min-w-[380px] text-left text-sm">
               <thead>
                 <tr className="bg-[color:var(--chocolate)]/70 text-xs uppercase tracking-[0.2em] text-[color:var(--gold-soft)]">
-                  <th className="px-4 py-5"> </th>
+                  <th className="px-4 py-5 font-semibold text-[color:var(--gold)]"> </th>
                   <th className="px-4 py-5">Grain Crumbs</th>
                   <th className="px-4 py-5 opacity-70">Typical Bakery</th>
                 </tr>
@@ -426,8 +426,8 @@ function ComparisonTable() {
                 {rows.map((r, i) => (
                   <tr key={r[0]} className={i % 2 ? "bg-white/[0.02]" : ""}>
                     <td className="px-4 py-5 font-medium uppercase tracking-wider text-[color:var(--gold-soft)]">{r[0]}</td>
-                    <td className="px-4 py-5 font-display text-lg text-[color:var(--cream)]">{r[1]}</td>
-                    <td className="px-4 py-5 text-[color:var(--cream)]/60 line-through decoration-[color:var(--cream)]/30">{r[2]}</td>
+                    <td className="px-4 py-5 font-semibold text-[color:var(--cream)]">{r[1]}</td>
+                    <td className="px-4 py-5 text-[color:var(--cream)]/60">{r[2]}</td>
                   </tr>
                 ))}
               </tbody>
