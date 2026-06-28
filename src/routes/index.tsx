@@ -13,7 +13,6 @@ import {
 import founderImg from "@/assets/founder.jpg";
 const giftingImg = "/assets/grain-crumbs/gifting-premium.png";
 
-
 const hero = "/assets/grain-crumbs/hero-premium.png";
 const cakeImg = "/assets/grain-crumbs/brownie-cake-feature.png";
 import { Reveal } from "@/components/Reveal";
@@ -88,11 +87,31 @@ function Hero() {
             </p>
           </Reveal>
           <Reveal delay={360}>
+            {/* FIX 1: On mobile — 2 main buttons + secondary actions as text links */}
             <div className="mt-7 grid grid-cols-1 gap-3 sm:flex sm:flex-wrap md:mt-9">
               <Link to="/order" className="btn-primary w-full sm:w-auto">
                 Order Now <ArrowRight className="h-4 w-4" />
               </Link>
               <Link to="/brownies" className="btn-outline w-full sm:w-auto">View Menu</Link>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm sm:hidden">
+              <a
+                href={WHATSAPP_ORDER_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[color:var(--chocolate)] underline underline-offset-2"
+              >
+                Request a Quote
+              </a>
+              <span className="text-border">·</span>
+              <Link
+                to="/brownie-cakes"
+                className="text-[color:var(--chocolate)] underline underline-offset-2"
+              >
+                Customise Your Cake
+              </Link>
+            </div>
+            <div className="mt-3 hidden flex-wrap gap-3 sm:flex">
               <a href={WHATSAPP_ORDER_URL} target="_blank" rel="noreferrer" className="btn-outline w-full sm:w-auto">Request a Quote</a>
               <Link to="/brownie-cakes" className="btn-outline w-full sm:w-auto">Customise Your Cake</Link>
             </div>
@@ -158,15 +177,18 @@ function WhyUs() {
           </h2>
         </Reveal>
 
+        {/* FIX 2: Mobile — icon left of text (flex row), desktop — icon above text (block) */}
         <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {why.map((w, i) => (
             <Reveal key={w.title} delay={i * 70}>
-              <div className="card-warm h-full p-7">
-                <div className="grid h-12 w-12 place-items-center rounded-full bg-[color:var(--cream)] text-[color:var(--chocolate)] ring-1 ring-[color:var(--gold)]/40">
-                  <w.icon className="h-5 w-5" />
+              <div className="card-warm flex h-full items-start gap-4 p-5 md:block md:p-7">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[color:var(--cream)] text-[color:var(--chocolate)] ring-1 ring-[color:var(--gold)]/40 md:h-12 md:w-12">
+                  <w.icon className="h-4 w-4 md:h-5 md:w-5" />
                 </div>
-                <h3 className="mt-5 font-display text-2xl">{w.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{w.text}</p>
+                <div>
+                  <h3 className="mt-0 font-display text-xl md:mt-5 md:text-2xl">{w.title}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{w.text}</p>
+                </div>
               </div>
             </Reveal>
           ))}
@@ -217,33 +239,21 @@ const collections = [
     status: "Coming soon",
     available: false,
     to: "/grain-crumbs-lite" as const,
-    points: [
-      "Jaggery + Monk Fruit",
-      "Reduced Added Sugar",
-      "Lower-GI Focus",
-    ],
+    points: ["Jaggery + Monk Fruit", "Reduced Added Sugar", "Lower-GI Focus"],
   },
   {
     name: "Grain Crumbs Pro",
     status: "Coming soon",
     available: false,
     to: "/grain-crumbs-pro" as const,
-    points: [
-      "High Protein",
-      "Millet Based",
-      "Fitness Focused",
-    ],
+    points: ["High Protein", "Millet Based", "Fitness Focused"],
   },
   {
     name: "Cookie Cake Tins",
     status: "Coming soon",
     available: false,
     to: "/cookie-tins" as const,
-    points: [
-      "Premium Oozy Cookie Cake Tins",
-      "Keepsake Gifting Tins",
-      "In Scrumptious Flavours",
-    ],
+    points: ["Premium Oozy Cookie Cake Tins", "Keepsake Gifting Tins", "In Scrumptious Flavours"],
   },
 ];
 
@@ -471,12 +481,8 @@ function Story() {
               for my daughter. What began as a personal journey soon became something
               friends and family kept asking for.
             </p>
-            <p>
-              Today, every batch is still made with the same care.
-            </p>
-            <p className="font-display text-xl text-foreground md:text-2xl">
-              — Ankita Jain
-            </p>
+            <p>Today, every batch is still made with the same care.</p>
+            <p className="font-display text-xl text-foreground md:text-2xl">— Ankita Jain</p>
           </div>
           <div className="mt-7 md:mt-8">
             <Link to="/about" className="btn-outline w-full sm:w-auto">Read the full story</Link>
@@ -526,7 +532,6 @@ function BehindTheScenes() {
                 </p>
               </div>
             </div>
-
             <div className="flex w-full items-center justify-between gap-4 px-8 py-5">
               <div className="flex items-center gap-3">
                 <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-600">
