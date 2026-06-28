@@ -32,7 +32,7 @@ export function SiteHeader() {
             <span className="truncate font-display text-lg leading-none tracking-wide md:text-xl">
               Grain Crumbs
             </span>
-            <span className="mt-1 hidden text-[10px] tracking-[0.3em] text-muted-foreground sm:block">
+            <span className="mt-1 hidden text-[10px] tracking-[0.2em] text-muted-foreground sm:block">
               Redefining Sweet Indulgence with Millets
             </span>
           </div>
