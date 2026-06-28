@@ -56,7 +56,14 @@ function OrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
 
-  // Premium chocolate toppings add-on (brownies only)
+  // Detect if any cart item already has premium toppings baked into its price
+  // (set from the brownies page before add-to-cart)
+  const cartHasPremiumToppings = cartItems.some((item) =>
+    item.name.includes("+ Premium Toppings"),
+  );
+
+  // Premium chocolate toppings add-on (brownies only).
+  // Pre-check if the cart already carries premium toppings so the UI reflects reality.
   const [premiumToppings, setPremiumToppings] = useState(false);
 
   // Reference image state
@@ -120,9 +127,11 @@ function OrderPage() {
     [hasCart, cartItems],
   );
 
-  // Effective total for brownies — adds ₹35 if premium toppings selected
+  // Effective total for brownies.
+  // hasCart flow: ₹35 already baked into cartSubtotal if premium was chosen on brownies page — never add again.
+  // !hasCart flow: user picks premium on this page → add ₹35 on top.
   const isBrowniesSelected = form.type === "Brownies";
-  const toppingAddon = isBrowniesSelected && premiumToppings ? PREMIUM_TOPPINGS_PRICE : 0;
+  const toppingAddon = isBrowniesSelected && !hasCart && premiumToppings ? PREMIUM_TOPPINGS_PRICE : 0;
   const effectiveTotal = cartSubtotal + toppingAddon;
 
   const waMessage = useMemo(() => {
@@ -133,8 +142,8 @@ function OrderPage() {
       form.email && `Email: ${form.email}`,
       `Product: ${form.type}`,
       hasCart && form.type === "Brownies" && `Cart items: ${cartSummary}`,
-      hasCart && form.type === "Brownies" && premiumToppings && `Add-on: Premium Chocolate Toppings (+₹${PREMIUM_TOPPINGS_PRICE})`,
-      hasCart && form.type === "Brownies" && `Estimated total: ₹${effectiveTotal}`,
+      hasCart && form.type === "Brownies" && cartHasPremiumToppings && `Add-on: Premium Chocolate Toppings (+₹${PREMIUM_TOPPINGS_PRICE}) — included in item prices`,
+      hasCart && form.type === "Brownies" && `Estimated total: ₹${cartSubtotal}`,
       !hasCart && form.type === "Brownies" && `Flavour: ${form.flavour}`,
       !hasCart && form.type === "Brownies" && `Pieces: ${form.browniePieces}`,
       !hasCart && form.type === "Brownies" && premiumToppings && `Add-on: Premium Chocolate Toppings (+₹${PREMIUM_TOPPINGS_PRICE})`,
@@ -158,7 +167,7 @@ function OrderPage() {
       form.notes && `Notes: ${form.notes}`,
     ].filter(Boolean).join("\n");
     return encodeURIComponent(lines);
-  }, [form, hasCart, cartSummary, effectiveTotal, premiumToppings]);
+  }, [form, hasCart, cartSummary, cartSubtotal, effectiveTotal, premiumToppings, cartHasPremiumToppings]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,12 +200,16 @@ function OrderPage() {
       }
 
       // Build notes — include premium topping if selected
-      const premiumNote = isBrowniesSelected && premiumToppings
-        ? `Add-on: Premium Chocolate Toppings (+₹${PREMIUM_TOPPINGS_PRICE})`
-        : null;
+      const premiumNote = hasCart
+        ? cartHasPremiumToppings
+          ? `Add-on: Premium Chocolate Toppings (+₹${PREMIUM_TOPPINGS_PRICE}) — included in item prices`
+          : null
+        : isBrowniesSelected && premiumToppings
+          ? `Add-on: Premium Chocolate Toppings (+₹${PREMIUM_TOPPINGS_PRICE})`
+          : null;
 
       const cartNotes = hasCart && form.type === "Brownies"
-        ? [form.notes, `Cart: ${cartSummary} (Est. ₹${effectiveTotal})`, premiumNote].filter(Boolean).join("\n")
+        ? [form.notes, `Cart: ${cartSummary} (Est. ₹${cartSubtotal})`, premiumNote].filter(Boolean).join("\n")
         : [form.notes, premiumNote].filter(Boolean).join("\n") || null;
 
       const { data, error } = await supabase.from("orders").insert({
@@ -374,35 +387,35 @@ function OrderPage() {
                         ))}
                       </ul>
 
-                      {/* Premium toppings add-on row */}
-                      {premiumToppings && (
-                        <div className="mt-3 flex justify-between gap-4 border-t border-border/50 pt-3 text-sm">
-                          <span className="text-[color:var(--gold)]">Premium Chocolate Toppings</span>
-                          <span className="text-[color:var(--gold)]">+₹{PREMIUM_TOPPINGS_PRICE}</span>
-                        </div>
-                      )}
-
-                      {/* Total */}
+                      {/* Total — ₹35 already included in item prices if premium was chosen */}
                       <div className="mt-4 flex items-baseline justify-between border-t border-border/50 pt-3">
                         <span className="text-sm text-muted-foreground">Estimated total</span>
-                        <p className="font-display text-xl text-[color:var(--chocolate)]">₹{effectiveTotal}</p>
+                        <p className="font-display text-xl text-[color:var(--chocolate)]">₹{cartSubtotal}</p>
                       </div>
                     </div>
 
-                    {/* Premium toppings checkbox */}
-                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 px-4 py-3 text-sm transition hover:border-[color:var(--gold)]/70 hover:bg-[color:var(--cream-dark)]/70">
+                    {/* Premium toppings indicator — read-only, reflects what was chosen on the brownies page */}
+                    <div className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${
+                      cartHasPremiumToppings
+                        ? "border-[color:var(--gold)]/60 bg-[color:var(--cream-dark)]/70"
+                        : "border-border/40 bg-[color:var(--cream-dark)]/20 opacity-60"
+                    }`}>
                       <input
                         type="checkbox"
-                        checked={premiumToppings}
-                        onChange={(e) => setPremiumToppings(e.target.checked)}
-                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-[color:var(--chocolate-dark)]"
+                        checked={cartHasPremiumToppings}
+                        readOnly
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-[color:var(--chocolate-dark)] cursor-not-allowed"
                       />
                       <span>
                         <span className="font-medium text-foreground">Premium Chocolate Toppings</span>
                         <span className="ml-2 font-semibold text-[color:var(--gold)]">+₹{PREMIUM_TOPPINGS_PRICE}</span>
-                        <span className="mt-0.5 block text-xs text-muted-foreground">Available at an additional ₹{PREMIUM_TOPPINGS_PRICE} per order</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                          {cartHasPremiumToppings
+                            ? "Already included — added when you built your cart"
+                            : "Not selected — go back to the brownies page to add this"}
+                        </span>
                       </span>
-                    </label>
+                    </div>
                   </div>
                 )}
 
