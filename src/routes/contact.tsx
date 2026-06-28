@@ -27,8 +27,9 @@ const channels = [
 function Page() {
   return (
     <>
+      {/* FIX 1: py-12 on mobile instead of py-20 — kills the dead space below the text */}
       <section className="border-b border-border/60">
-        <div className="container-prose py-20 text-center md:py-24">
+        <div className="container-prose py-12 text-center md:py-24">
           <p className="divider-gold eyebrow">Contact</p>
           <h1 className="mt-5 font-display text-5xl md:text-6xl">Say hello.</h1>
           <p className="mx-auto mt-5 max-w-xl text-muted-foreground">
@@ -40,28 +41,41 @@ function Page() {
 
       <section className="section">
         <div className="container-prose">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {channels.map((c, i) => (
               <Reveal key={c.label} delay={i * 60}>
                 <a
                   href={c.href}
                   target={c.href.startsWith("http") ? "_blank" : undefined}
                   rel="noreferrer"
-                  className={`group block h-full rounded-2xl border p-7 transition-all ${
+                  className={`group flex items-center gap-4 rounded-2xl border p-5 transition-all md:block md:h-full md:p-7 ${
                     c.primary
                       ? "border-[color:var(--chocolate-dark)] bg-[color:var(--chocolate-dark)] text-[color:var(--cream)] hover:bg-[color:var(--chocolate)]"
                       : "card-warm"
                   }`}
                 >
-                  <div className={`grid h-11 w-11 place-items-center rounded-full ${c.primary ? "bg-[color:var(--gold)] text-[color:var(--chocolate-dark)]" : "bg-[color:var(--cream-dark)] text-[color:var(--chocolate)] ring-1 ring-[color:var(--gold)]/40"}`}>
-                    <c.icon className="h-5 w-5" />
+                  {/* FIX 2: Icon — smaller on mobile, original size on md+ */}
+                  <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full md:h-11 md:w-11 ${
+                    c.primary
+                      ? "bg-[color:var(--gold)] text-[color:var(--chocolate-dark)]"
+                      : "bg-[color:var(--cream-dark)] text-[color:var(--chocolate)] ring-1 ring-[color:var(--gold)]/40"
+                  }`}>
+                    <c.icon className="h-4 w-4 md:h-5 md:w-5" />
                   </div>
-                  <p className={`mt-5 text-xs uppercase tracking-[0.25em] ${c.primary ? "text-[color:var(--gold-soft)]" : "text-muted-foreground"}`}>
-                    {c.label}
-                  </p>
-                  <p className={`mt-2 font-display text-2xl ${c.primary ? "text-[color:var(--cream)]" : ""}`}>
-                    {c.value}
-                  </p>
+
+                  {/* Text — inline on mobile (no top margin), stacked on md+ (mt-5) */}
+                  <div className="min-w-0">
+                    <p className={`text-xs uppercase tracking-[0.25em] md:mt-5 ${
+                      c.primary ? "text-[color:var(--gold-soft)]" : "text-muted-foreground"
+                    }`}>
+                      {c.label}
+                    </p>
+                    <p className={`mt-0.5 truncate font-display text-xl md:mt-2 md:text-2xl ${
+                      c.primary ? "text-[color:var(--cream)]" : ""
+                    }`}>
+                      {c.value}
+                    </p>
+                  </div>
                 </a>
               </Reveal>
             ))}
