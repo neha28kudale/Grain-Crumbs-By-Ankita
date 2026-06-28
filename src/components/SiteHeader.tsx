@@ -33,7 +33,7 @@ export function SiteHeader() {
               Grain Crumbs
             </span>
             <span className="mt-1 hidden text-[10px] tracking-[0.3em] text-muted-foreground sm:block">
-              MILLET BROWNIES · PUNE
+              Redefining Sweet Indulgence with Millets
             </span>
           </div>
         </Link>
