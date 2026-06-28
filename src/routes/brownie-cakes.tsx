@@ -32,21 +32,21 @@ type Row = {
 };
 
 const rows: Row[] = [
-  { name: "Chocolate Walnut",         icon: "/assets/grain-crumbs/chocolate-walnut.png", old: [360, 640, 810, 1200], prices: [310, 540, 670, 990] },
-  { name: "Cappuccino Walnut",        icon: "/assets/grain-crumbs/cappuccino-walnut.png", old: [360, 620, 780, 1150], prices: [310, 520, 650, 950] },
-  { name: "Mixed Berry Jam",          icon: "/assets/grain-crumbs/mixed-berry-jam.png",   old: [270, 460, 570, 840],  prices: [230, 390, 480, 700] },
-  { name: "Coconut Bounty",           icon: "/assets/grain-crumbs/coconut-bounty.png",    old: [280, 490, 610, 900],  prices: [240, 410, 510, 740] },
-  { name: "Cream Cheese",             icon: "/assets/grain-crumbs/cream-cheese.png",      old: [380, 690, 870, 1300], prices: [320, 570, 720, 1060] },
-  { name: "Hazelnut Spread Filling",  icon: "/assets/grain-crumbs/hazelnut-spread.png",   old: [460, 850, 1080, 1620],prices: [390, 700, 890, 1320] },
+  { name: "Chocolate Walnut",         icon: "/assets/grain-crumbs/chocolate-walnut.png",  old: [360, 640, 810, 1200],  prices: [310, 540, 670, 990]   },
+  { name: "Cappuccino Walnut",        icon: "/assets/grain-crumbs/cappuccino-walnut.png", old: [360, 620, 780, 1150],  prices: [310, 520, 650, 950]   },
+  { name: "Mixed Berry Jam",          icon: "/assets/grain-crumbs/mixed-berry-jam.png",   old: [270, 460, 570, 840],   prices: [230, 390, 480, 700]   },
+  { name: "Coconut Bounty",           icon: "/assets/grain-crumbs/coconut-bounty.png",    old: [280, 490, 610, 900],   prices: [240, 410, 510, 740]   },
+  { name: "Cream Cheese",             icon: "/assets/grain-crumbs/cream-cheese.png",      old: [380, 690, 870, 1300],  prices: [320, 570, 720, 1060]  },
+  { name: "Hazelnut Spread Filling",  icon: "/assets/grain-crumbs/hazelnut-spread.png",   old: [460, 850, 1080, 1620], prices: [390, 700, 890, 1320]  },
 ];
 
 const occasions = [
-  { title: "Birthdays",      tag: "Walnut & chocolate, hand-piped.",     img: "/assets/grain-crumbs/occasions/birthday.png" },
-  { title: "For Mom",        tag: "Personalised, heart-detailed.",        img: "/assets/grain-crumbs/occasions/for-mom.png" },
-  { title: "Father's Day",   tag: "Coconut snow, gold hearts.",           img: "/assets/grain-crumbs/occasions/fathers-day.png" },
-  { title: "Congratulations",tag: "For the big wins.",                    img: "/assets/grain-crumbs/occasions/congratulations.png" },
-  { title: "Anniversaries",  tag: "Rosettes & gold hearts.",              img: "/assets/grain-crumbs/occasions/anniversary.png" },
-  { title: "Custom Cakes",   tag: "Butterfly-detailed, signature.",       img: "/assets/grain-crumbs/occasions/custom-cakes.png" },
+  { title: "Birthdays",       tag: "Walnut & chocolate, hand-piped.",     img: "/assets/grain-crumbs/occasions/birthday.png"        },
+  { title: "For Mom",         tag: "Personalised, heart-detailed.",        img: "/assets/grain-crumbs/occasions/for-mom.png"          },
+  { title: "Father's Day",    tag: "Coconut snow, gold hearts.",           img: "/assets/grain-crumbs/occasions/fathers-day.png"      },
+  { title: "Congratulations", tag: "For the big wins.",                    img: "/assets/grain-crumbs/occasions/congratulations.png"  },
+  { title: "Anniversaries",   tag: "Rosettes & gold hearts.",              img: "/assets/grain-crumbs/occasions/anniversary.png"      },
+  { title: "Custom Cakes",    tag: "Butterfly-detailed, signature.",       img: "/assets/grain-crumbs/occasions/custom-cakes.png"     },
 ];
 
 const heroImages = [
@@ -58,7 +58,7 @@ const heroImages = [
 function Page() {
   return (
     <>
-      {/* HERO */}
+      {/* ── HERO ── */}
       <section className="relative overflow-hidden border-b border-border/60 bg-[color:var(--cream)]">
         <div className="container-prose grid items-center gap-12 py-16 md:grid-cols-2 md:py-24">
           <Reveal>
@@ -95,7 +95,7 @@ function Page() {
         </div>
       </section>
 
-      {/* MENU TABLE */}
+      {/* ── MENU TABLE ── */}
       <section className="section" id="menu">
         <div className="container-prose">
           <Reveal className="mx-auto max-w-2xl text-center">
@@ -104,9 +104,10 @@ function Page() {
             <p className="mt-3 italic text-muted-foreground">Handcrafted with real ingredients. Baked with love.</p>
           </Reveal>
 
-          <Reveal className="mt-12 overflow-hidden rounded-[1.75rem] border border-[color:var(--gold)]/30 bg-card shadow-[0_24px_60px_-30px_rgba(60,30,10,0.45)]">
+          {/* ── DESKTOP TABLE (md+) ── */}
+          <Reveal className="mt-12 hidden md:block overflow-hidden rounded-[1.75rem] border border-[color:var(--gold)]/30 bg-card shadow-[0_24px_60px_-30px_rgba(60,30,10,0.45)]">
             {/* Header */}
-            <div className="grid grid-cols-[1.6fr_repeat(4,1fr)] items-center bg-[color:var(--cream-dark)]/70 px-4 py-4 text-[11px] uppercase tracking-[0.22em] text-[color:var(--chocolate)] md:px-8">
+            <div className="grid grid-cols-[1.6fr_repeat(4,1fr)] items-center bg-[color:var(--cream-dark)]/70 px-8 py-4 text-[11px] uppercase tracking-[0.22em] text-[color:var(--chocolate)]">
               <div>Flavours</div>
               <div className="text-center">250g</div>
               <div className="text-center">500g</div>
@@ -117,24 +118,72 @@ function Page() {
             {rows.map((r, i) => (
               <div
                 key={r.name}
-                className={`grid grid-cols-[1.6fr_repeat(4,1fr)] items-center px-4 py-5 md:px-8 ${i !== rows.length - 1 ? "border-t border-border/60" : ""}`}
+                className={`grid grid-cols-[1.6fr_repeat(4,1fr)] items-center px-8 py-5 ${
+                  i !== rows.length - 1 ? "border-t border-border/60" : ""
+                }`}
               >
-                <div className="flex items-center gap-3 md:gap-4">
-                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full ring-1 ring-[color:var(--gold)]/30 md:h-12 md:w-12">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full ring-1 ring-[color:var(--gold)]/30">
                     <img src={r.icon} alt={r.name} className="h-full w-full object-cover" loading="lazy" />
                   </div>
-                  <div className="font-display text-base leading-tight text-[color:var(--chocolate-dark)] md:text-lg">
+                  <div className="font-display text-lg leading-tight text-[color:var(--chocolate-dark)]">
                     {r.name}
                   </div>
                 </div>
                 {r.prices.map((p, idx) => (
                   <div key={idx} className="text-center">
                     <div className="text-[11px] text-muted-foreground line-through">₹{r.old[idx]}</div>
-                    <div className="font-display text-lg text-[color:var(--chocolate)] md:text-xl">₹{p}</div>
+                    <div className="font-display text-xl text-[color:var(--chocolate)]">₹{p}</div>
                   </div>
                 ))}
               </div>
             ))}
+          </Reveal>
+
+          {/* ── MOBILE CARDS (< md) ── */}
+          <Reveal className="mt-10 md:hidden">
+            {/* Shared size column headers */}
+            <div className="mb-3 grid grid-cols-[2fr_repeat(4,1fr)] items-center px-4 text-[10px] uppercase tracking-[0.18em] text-[color:var(--chocolate)]/60">
+              <div>Flavour</div>
+              <div className="text-center">250g</div>
+              <div className="text-center">500g</div>
+              <div className="text-center">650g</div>
+              <div className="text-center">1kg</div>
+            </div>
+
+            <div className="space-y-3">
+              {rows.map((r) => (
+                <div
+                  key={r.name}
+                  className="overflow-hidden rounded-2xl border border-[color:var(--gold)]/30 bg-card shadow-[0_8px_24px_-12px_rgba(60,30,10,0.25)]"
+                >
+                  {/* Single row: icon + name + 4 prices */}
+                  <div className="grid grid-cols-[2fr_repeat(4,1fr)] items-center gap-0 px-3 py-3">
+                    {/* Flavour name + icon */}
+                    <div className="flex items-center gap-2 pr-2">
+                      <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full ring-1 ring-[color:var(--gold)]/30">
+                        <img src={r.icon} alt={r.name} className="h-full w-full object-cover" loading="lazy" />
+                      </div>
+                      <span className="font-display text-[13px] leading-snug text-[color:var(--chocolate-dark)]">
+                        {r.name}
+                      </span>
+                    </div>
+
+                    {/* 4 price columns */}
+                    {r.prices.map((p, idx) => (
+                      <div key={idx} className="flex flex-col items-center gap-0.5 border-l border-border/40 py-1">
+                        <span className="text-[9px] leading-none text-muted-foreground line-through">
+                          ₹{r.old[idx]}
+                        </span>
+                        <span className="font-display text-[13px] leading-tight text-[color:var(--chocolate)]">
+                          ₹{p}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </Reveal>
 
           <Reveal className="mt-8 text-center text-sm text-muted-foreground">
@@ -148,7 +197,7 @@ function Page() {
         </div>
       </section>
 
-      {/* OCCASIONS */}
+      {/* ── OCCASIONS ── */}
       <section className="section bg-[color:var(--cream-dark)]/40" id="celebrations">
         <div className="container-prose">
           <Reveal className="mx-auto max-w-2xl text-center">
