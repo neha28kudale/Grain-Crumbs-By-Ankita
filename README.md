@@ -46,4 +46,4 @@ Deployed on Vercel.
 
 ## Author
 
-Developed by Bhushan Kudale
+Developed by Neha Kudale
