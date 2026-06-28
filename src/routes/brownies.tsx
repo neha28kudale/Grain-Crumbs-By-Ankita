@@ -20,6 +20,20 @@ export const Route = createFileRoute("/brownies")({
 
 const photoTreatment = "h-full w-full object-cover saturate-[0.92] contrast-[1.05] brightness-[0.98]";
 
+// Flavour-specific premium topping label — keyed by slug
+const PREMIUM_TOPPING_LABEL: Record<string, string> = {
+  "chocolate-walnut":   "Premium Chocolate Toppings",
+  "cappuccino-walnut":  "Premium Coffee Chocolate Toppings",
+  "mixed-berry-jam":    "Premium Berries Chocolate Toppings",
+  "coconut-bounty":     "Premium Coconut Chocolate Toppings",
+  "cream-cheese":       "Premium Cream Cheese Chocolate Toppings",
+  "hazelnut-spread":    "Nutella Brand Toppings",
+};
+
+function getPremiumLabel(slug: string) {
+  return PREMIUM_TOPPING_LABEL[slug] ?? "Premium Chocolate Toppings";
+}
+
 function BrowniesPage() {
   const { addItem } = useCart();
   const navigate = useNavigate();
@@ -29,9 +43,10 @@ function BrowniesPage() {
 
   const handleAddToCart = (f: (typeof flavours)[number]) => {
     const hasPremium = premiumToppings[f.slug] ?? false;
+    const premiumLabel = getPremiumLabel(f.slug);
     addItem({
       slug: f.slug,
-      name: hasPremium ? `${f.name} + Premium Toppings` : f.name,
+      name: hasPremium ? `${f.name} + ${premiumLabel}` : f.name,
       price: hasPremium ? f.price + 35 : f.price,
       image: f.image,
     });
@@ -136,7 +151,7 @@ function BrowniesPage() {
                           className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-[color:var(--chocolate-dark)]"
                         />
                         <span>
-                          <span className="font-medium text-foreground">Premium Chocolate Toppings</span>
+                          <span className="font-medium text-foreground">{getPremiumLabel(f.slug)}</span>
                           <span className="ml-2 font-semibold text-[color:var(--gold)]">+₹35</span>
                           <span className="mt-0.5 block text-xs text-muted-foreground">Available at an additional ₹35 per order</span>
                         </span>

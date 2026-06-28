@@ -47,6 +47,24 @@ const occasions = ["Birthday", "Anniversary", "Corporate Event", "Gift", "Other"
 
 const PREMIUM_TOPPINGS_PRICE = 35;
 
+// Must match the map in brownies.tsx
+const PREMIUM_TOPPING_LABELS = new Set([
+  "Premium Chocolate Toppings",
+  "Premium Coffee Chocolate Toppings",
+  "Premium Berries Chocolate Toppings",
+  "Premium Coconut Chocolate Toppings",
+  "Premium Cream Cheese Chocolate Toppings",
+  "Nutella Brand Toppings",
+]);
+
+// Returns the premium label from a cart item name like "Chocolate Walnut + Premium Chocolate Toppings"
+function extractPremiumLabel(itemName: string): string | null {
+  for (const label of PREMIUM_TOPPING_LABELS) {
+    if (itemName.includes(`+ ${label}`)) return label;
+  }
+  return null;
+}
+
 function OrderPage() {
   const { from } = Route.useSearch();
   const { items: cartItems, subtotal: cartSubtotal, clearCart } = useCart();
@@ -58,9 +76,10 @@ function OrderPage() {
 
   // Detect if any cart item already has premium toppings baked into its price
   // (set from the brownies page before add-to-cart)
-  const cartHasPremiumToppings = cartItems.some((item) =>
-    item.name.includes("+ Premium Toppings"),
-  );
+  const cartPremiumLabels = cartItems
+    .map((item) => extractPremiumLabel(item.name))
+    .filter((l): l is string => l !== null);
+  const cartHasPremiumToppings = cartPremiumLabels.length > 0;
 
   // Premium chocolate toppings add-on (brownies only).
   // Pre-check if the cart already carries premium toppings so the UI reflects reality.
