@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { flavours } from "@/lib/flavours";
 import { Reveal } from "@/components/Reveal";
 import { WHATSAPP_PLAIN_URL } from "@/lib/whatsapp";
@@ -23,11 +24,15 @@ function BrowniesPage() {
   const { addItem } = useCart();
   const navigate = useNavigate();
 
+  // Track premium topping selection independently per flavour slug
+  const [premiumToppings, setPremiumToppings] = useState<Record<string, boolean>>({});
+
   const handleAddToCart = (f: (typeof flavours)[number]) => {
+    const hasPremium = premiumToppings[f.slug] ?? false;
     addItem({
       slug: f.slug,
-      name: f.name,
-      price: f.price,
+      name: hasPremium ? `${f.name} + Premium Toppings` : f.name,
+      price: hasPremium ? f.price + 35 : f.price,
       image: f.image,
     });
     toast.success(`${f.name} added to cart`, {
@@ -40,7 +45,7 @@ function BrowniesPage() {
 
   return (
     <>
-      {/* HERO — collage style, inspired by brownie cakes page */}
+      {/* HERO */}
       <section className="relative overflow-hidden border-b border-border/60 bg-[color:var(--cream-dark)]/40">
         <div className="container-prose relative grid items-center gap-10 py-16 md:grid-cols-[1.05fr_1fr] md:py-24">
           <Reveal>
@@ -69,11 +74,10 @@ function BrowniesPage() {
               />
             </div>
           </Reveal>
-
         </div>
       </section>
 
-      {/* MENU — full pricing list, kept from before */}
+      {/* MENU */}
       <section id="menu" className="section bg-[color:var(--cream-dark)]/40">
         <div className="container-prose">
           <Reveal className="mx-auto max-w-2xl text-center">
@@ -83,49 +87,77 @@ function BrowniesPage() {
           </Reveal>
 
           <div className="mt-14 grid gap-10">
-            {flavours.map((f, i) => (
-              <Reveal key={f.slug} delay={i * 50}>
-                <article id={f.slug} className={`grid items-center gap-8 scroll-mt-24 md:grid-cols-2 ${i % 2 ? "md:[&>div:first-child]:order-2" : ""}`}>
-                  <div className="relative overflow-hidden rounded-[2rem] ring-1 ring-[color:var(--gold)]/25 shadow-[0_24px_60px_-28px_rgba(60,30,10,0.38)]">
-                    <img
-                      src={f.image}
-                      alt={f.name}
-                      loading="lazy"
-                      width={1024}
-                      height={1280}
-                      className={photoTreatment}
-                    />
-                  </div>
-                  <div>
-                    <p className="eyebrow">{`0${i + 1}`}</p>
-                    <h3 className="mt-3 font-display text-4xl md:text-5xl">{f.name}</h3>
-                    <div className="mt-3 flex flex-wrap items-baseline gap-3">
-                      <p className="italic text-[color:var(--gold)]">{f.tagline}</p>
-                      <span className="font-display text-2xl text-[color:var(--chocolate)]">₹{f.price}</span>
+            {flavours.map((f, i) => {
+              const hasPremium = premiumToppings[f.slug] ?? false;
+              const displayPrice = hasPremium ? f.price + 35 : f.price;
+
+              return (
+                <Reveal key={f.slug} delay={i * 50}>
+                  <article id={f.slug} className={`grid items-center gap-8 scroll-mt-24 md:grid-cols-2 ${i % 2 ? "md:[&>div:first-child]:order-2" : ""}`}>
+                    <div className="relative overflow-hidden rounded-[2rem] ring-1 ring-[color:var(--gold)]/25 shadow-[0_24px_60px_-28px_rgba(60,30,10,0.38)]">
+                      <img
+                        src={f.image}
+                        alt={f.name}
+                        loading="lazy"
+                        width={1024}
+                        height={1280}
+                        className={photoTreatment}
+                      />
                     </div>
-                    <p className="mt-5 max-w-md text-muted-foreground">{f.description}</p>
-                    <ul className="mt-6 flex flex-wrap gap-2">
-                      {f.notes.map((n) => (
-                        <li key={n} className="rounded-full border border-border bg-card px-3 py-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                          {n}
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => handleAddToCart(f)}
-                        className="btn-primary w-full sm:w-auto"
-                      >
-                        Add to cart
-                      </button>
-                      <Link to="/cart" className="btn-outline w-full sm:w-auto">View cart</Link>
-                      <a href={WHATSAPP_PLAIN_URL} target="_blank" rel="noreferrer" className="btn-outline w-full sm:w-auto">Ask on WhatsApp</a>
+                    <div>
+                      <p className="eyebrow">{`0${i + 1}`}</p>
+                      <h3 className="mt-3 font-display text-4xl md:text-5xl">{f.name}</h3>
+                      <div className="mt-3 flex flex-wrap items-baseline gap-3">
+                        <p className="italic text-[color:var(--gold)]">{f.tagline}</p>
+                        <span className="font-display text-2xl text-[color:var(--chocolate)]">
+                          ₹{displayPrice}
+                          {hasPremium && (
+                            <span className="ml-2 text-base font-normal text-muted-foreground line-through">₹{f.price}</span>
+                          )}
+                        </span>
+                      </div>
+                      <p className="mt-5 max-w-md text-muted-foreground">{f.description}</p>
+                      <ul className="mt-6 flex flex-wrap gap-2">
+                        {f.notes.map((n) => (
+                          <li key={n} className="rounded-full border border-border bg-card px-3 py-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                            {n}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* Premium Chocolate Toppings add-on */}
+                      <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 px-4 py-3 text-sm transition hover:border-[color:var(--gold)]/70 hover:bg-[color:var(--cream-dark)]/70">
+                        <input
+                          type="checkbox"
+                          checked={hasPremium}
+                          onChange={(e) =>
+                            setPremiumToppings((prev) => ({ ...prev, [f.slug]: e.target.checked }))
+                          }
+                          className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-[color:var(--chocolate-dark)]"
+                        />
+                        <span>
+                          <span className="font-medium text-foreground">Premium Chocolate Toppings</span>
+                          <span className="ml-2 font-semibold text-[color:var(--gold)]">+₹35</span>
+                          <span className="mt-0.5 block text-xs text-muted-foreground">Available at an additional ₹35 per order</span>
+                        </span>
+                      </label>
+
+                      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => handleAddToCart(f)}
+                          className="btn-primary w-full sm:w-auto"
+                        >
+                          Add to cart
+                        </button>
+                        <Link to="/cart" className="btn-outline w-full sm:w-auto">View cart</Link>
+                        <a href={WHATSAPP_PLAIN_URL} target="_blank" rel="noreferrer" className="btn-outline w-full sm:w-auto">Ask on WhatsApp</a>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              </Reveal>
-            ))}
+                  </article>
+                </Reveal>
+              );
+            })}
           </div>
         </div>
       </section>

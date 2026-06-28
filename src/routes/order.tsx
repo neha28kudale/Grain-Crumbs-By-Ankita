@@ -45,6 +45,8 @@ const brandingOptions = ["Logo Sticker", "Custom Message Card", "Custom Packagin
 
 const occasions = ["Birthday", "Anniversary", "Corporate Event", "Gift", "Other"];
 
+const PREMIUM_TOPPINGS_PRICE = 35;
+
 function OrderPage() {
   const { from } = Route.useSearch();
   const { items: cartItems, subtotal: cartSubtotal, clearCart } = useCart();
@@ -53,6 +55,9 @@ function OrderPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
+
+  // Premium chocolate toppings add-on (brownies only)
+  const [premiumToppings, setPremiumToppings] = useState(false);
 
   // Reference image state
   const [referenceImage, setReferenceImage] = useState<File | null>(null);
@@ -115,6 +120,11 @@ function OrderPage() {
     [hasCart, cartItems],
   );
 
+  // Effective total for brownies — adds ₹35 if premium toppings selected
+  const isBrowniesSelected = form.type === "Brownies";
+  const toppingAddon = isBrowniesSelected && premiumToppings ? PREMIUM_TOPPINGS_PRICE : 0;
+  const effectiveTotal = cartSubtotal + toppingAddon;
+
   const waMessage = useMemo(() => {
     const lines = [
       `*New enquiry — Grain Crumbs*`,
@@ -123,9 +133,11 @@ function OrderPage() {
       form.email && `Email: ${form.email}`,
       `Product: ${form.type}`,
       hasCart && form.type === "Brownies" && `Cart items: ${cartSummary}`,
-      hasCart && form.type === "Brownies" && `Estimated total: ₹${cartSubtotal}`,
+      hasCart && form.type === "Brownies" && premiumToppings && `Add-on: Premium Chocolate Toppings (+₹${PREMIUM_TOPPINGS_PRICE})`,
+      hasCart && form.type === "Brownies" && `Estimated total: ₹${effectiveTotal}`,
       !hasCart && form.type === "Brownies" && `Flavour: ${form.flavour}`,
       !hasCart && form.type === "Brownies" && `Pieces: ${form.browniePieces}`,
+      !hasCart && form.type === "Brownies" && premiumToppings && `Add-on: Premium Chocolate Toppings (+₹${PREMIUM_TOPPINGS_PRICE})`,
       form.type === "Brownie Cake" && `Flavour: ${form.flavour}`,
       form.type === "Brownie Cake" && `Weight: ${form.weight}`,
       form.type === "Brownie Cake" && form.message && `Cake message: ${form.message}`,
@@ -146,7 +158,7 @@ function OrderPage() {
       form.notes && `Notes: ${form.notes}`,
     ].filter(Boolean).join("\n");
     return encodeURIComponent(lines);
-  }, [form, hasCart, cartSummary, cartSubtotal]);
+  }, [form, hasCart, cartSummary, effectiveTotal, premiumToppings]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,9 +190,14 @@ function OrderPage() {
         }
       }
 
+      // Build notes — include premium topping if selected
+      const premiumNote = isBrowniesSelected && premiumToppings
+        ? `Add-on: Premium Chocolate Toppings (+₹${PREMIUM_TOPPINGS_PRICE})`
+        : null;
+
       const cartNotes = hasCart && form.type === "Brownies"
-        ? [form.notes, `Cart: ${cartSummary} (Est. ₹${cartSubtotal})`].filter(Boolean).join("\n")
-        : form.notes || null;
+        ? [form.notes, `Cart: ${cartSummary} (Est. ₹${effectiveTotal})`, premiumNote].filter(Boolean).join("\n")
+        : [form.notes, premiumNote].filter(Boolean).join("\n") || null;
 
       const { data, error } = await supabase.from("orders").insert({
         name: form.name,
@@ -339,26 +356,56 @@ function OrderPage() {
                   <ChipGroup options={productTypes} value={form.type} onChange={(v) => update("type", v)} />
                 </Field>
 
-                {/* BROWNIES */}
+                {/* BROWNIES — with cart or manual selection */}
                 {isBrownies && hasCart && (
-                  <div className="sm:col-span-2 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <ShoppingBag className="h-4 w-4 text-[color:var(--gold)]" />
-                      <p className="eyebrow !mb-0">Your cart</p>
+                  <div className="sm:col-span-2 space-y-4">
+                    {/* Cart summary */}
+                    <div className="rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <ShoppingBag className="h-4 w-4 text-[color:var(--gold)]" />
+                        <p className="eyebrow !mb-0">Your cart</p>
+                      </div>
+                      <ul className="space-y-2 text-sm">
+                        {cartItems.map((item) => (
+                          <li key={item.slug} className="flex justify-between gap-4">
+                            <span>{item.name} × {item.quantity}</span>
+                            <span>₹{item.price * item.quantity}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* Premium toppings add-on row */}
+                      {premiumToppings && (
+                        <div className="mt-3 flex justify-between gap-4 border-t border-border/50 pt-3 text-sm">
+                          <span className="text-[color:var(--gold)]">Premium Chocolate Toppings</span>
+                          <span className="text-[color:var(--gold)]">+₹{PREMIUM_TOPPINGS_PRICE}</span>
+                        </div>
+                      )}
+
+                      {/* Total */}
+                      <div className="mt-4 flex items-baseline justify-between border-t border-border/50 pt-3">
+                        <span className="text-sm text-muted-foreground">Estimated total</span>
+                        <p className="font-display text-xl text-[color:var(--chocolate)]">₹{effectiveTotal}</p>
+                      </div>
                     </div>
-                    <ul className="space-y-2 text-sm">
-                      {cartItems.map((item) => (
-                        <li key={item.slug} className="flex justify-between gap-4">
-                          <span>{item.name} × {item.quantity}</span>
-                          <span>₹{item.price * item.quantity}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="mt-4 font-display text-xl text-[color:var(--chocolate)]">
-                      Estimated total: ₹{cartSubtotal}
-                    </p>
+
+                    {/* Premium toppings checkbox */}
+                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 px-4 py-3 text-sm transition hover:border-[color:var(--gold)]/70 hover:bg-[color:var(--cream-dark)]/70">
+                      <input
+                        type="checkbox"
+                        checked={premiumToppings}
+                        onChange={(e) => setPremiumToppings(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-[color:var(--chocolate-dark)]"
+                      />
+                      <span>
+                        <span className="font-medium text-foreground">Premium Chocolate Toppings</span>
+                        <span className="ml-2 font-semibold text-[color:var(--gold)]">+₹{PREMIUM_TOPPINGS_PRICE}</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">Available at an additional ₹{PREMIUM_TOPPINGS_PRICE} per order</span>
+                      </span>
+                    </label>
                   </div>
                 )}
+
                 {isBrownies && !hasCart && (
                   <>
                     <Field label="Flavour">
@@ -369,6 +416,22 @@ function OrderPage() {
                     <Field label="Number of Pieces">
                       <ChipGroup options={browniePieces} value={form.browniePieces} onChange={(v) => update("browniePieces", v)} />
                     </Field>
+                    {/* Premium toppings checkbox for non-cart flow */}
+                    <div className="sm:col-span-2">
+                      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 px-4 py-3 text-sm transition hover:border-[color:var(--gold)]/70 hover:bg-[color:var(--cream-dark)]/70">
+                        <input
+                          type="checkbox"
+                          checked={premiumToppings}
+                          onChange={(e) => setPremiumToppings(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-[color:var(--chocolate-dark)]"
+                        />
+                        <span>
+                          <span className="font-medium text-foreground">Premium Chocolate Toppings</span>
+                          <span className="ml-2 font-semibold text-[color:var(--gold)]">+₹{PREMIUM_TOPPINGS_PRICE}</span>
+                          <span className="mt-0.5 block text-xs text-muted-foreground">Available at an additional ₹{PREMIUM_TOPPINGS_PRICE} per order</span>
+                        </span>
+                      </label>
+                    </div>
                   </>
                 )}
 
