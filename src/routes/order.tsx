@@ -47,15 +47,18 @@ const occasions = ["Birthday", "Anniversary", "Corporate Event", "Gift", "Other"
 
 const PREMIUM_TOPPINGS_PRICE = 35;
 
+// Flavour → premium topping label mapping
+const FLAVOUR_TOPPING_MAP: Record<string, string> = {
+  "Chocolate Walnut":  "Premium Chocolate Toppings",
+  "Cappuccino Walnut": "Premium Coffee Chocolate Toppings",
+  "Mixed Berry Jam":   "Premium Berries Chocolate Toppings",
+  "Coconut Bounty":    "Premium Coconut Chocolate Toppings",
+  "Cream Cheese":      "Premium Cream Cheese Chocolate Toppings",
+  "Hazelnut Spread":   "Nutella Brand Toppings",
+};
+
 // Must match the map in brownies.tsx
-const PREMIUM_TOPPING_LABELS = new Set([
-  "Premium Chocolate Toppings",
-  "Premium Coffee Chocolate Toppings",
-  "Premium Berries Chocolate Toppings",
-  "Premium Coconut Chocolate Toppings",
-  "Premium Cream Cheese Chocolate Toppings",
-  "Nutella Brand Toppings",
-]);
+const PREMIUM_TOPPING_LABELS = new Set(Object.values(FLAVOUR_TOPPING_MAP));
 
 // Returns the premium label from a cart item name like "Chocolate Walnut + Premium Chocolate Toppings"
 function extractPremiumLabel(itemName: string): string | null {
@@ -153,6 +156,9 @@ function OrderPage() {
   const toppingAddon = isBrowniesSelected && !hasCart && premiumToppings ? PREMIUM_TOPPINGS_PRICE : 0;
   const effectiveTotal = cartSubtotal + toppingAddon;
 
+  // Derive the correct topping label from the currently selected flavour
+  const flavourToppingLabel = FLAVOUR_TOPPING_MAP[form.flavour] ?? "Premium Chocolate Toppings";
+
   const waMessage = useMemo(() => {
     const lines = [
       `*New enquiry — Grain Crumbs*`,
@@ -161,11 +167,11 @@ function OrderPage() {
       form.email && `Email: ${form.email}`,
       `Product: ${form.type}`,
       hasCart && form.type === "Brownies" && `Cart items: ${cartSummary}`,
-      hasCart && form.type === "Brownies" && cartHasPremiumToppings && `Add-on: Premium Chocolate Toppings (+₹${PREMIUM_TOPPINGS_PRICE}) — included in item prices`,
+      hasCart && form.type === "Brownies" && cartHasPremiumToppings && `Add-on: ${cartPremiumLabels[0]} (+₹${PREMIUM_TOPPINGS_PRICE}) — included in item prices`,
       hasCart && form.type === "Brownies" && `Estimated total: ₹${cartSubtotal}`,
       !hasCart && form.type === "Brownies" && `Flavour: ${form.flavour}`,
       !hasCart && form.type === "Brownies" && `Pieces: ${form.browniePieces}`,
-      !hasCart && form.type === "Brownies" && premiumToppings && `Add-on: Premium Chocolate Toppings (+₹${PREMIUM_TOPPINGS_PRICE})`,
+      !hasCart && form.type === "Brownies" && premiumToppings && `Add-on: ${flavourToppingLabel} (+₹${PREMIUM_TOPPINGS_PRICE})`,
       form.type === "Brownie Cake" && `Flavour: ${form.flavour}`,
       form.type === "Brownie Cake" && `Weight: ${form.weight}`,
       form.type === "Brownie Cake" && form.message && `Cake message: ${form.message}`,
@@ -186,7 +192,7 @@ function OrderPage() {
       form.notes && `Notes: ${form.notes}`,
     ].filter(Boolean).join("\n");
     return encodeURIComponent(lines);
-  }, [form, hasCart, cartSummary, cartSubtotal, effectiveTotal, premiumToppings, cartHasPremiumToppings]);
+  }, [form, hasCart, cartSummary, cartSubtotal, effectiveTotal, premiumToppings, cartHasPremiumToppings, flavourToppingLabel, cartPremiumLabels]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -218,13 +224,13 @@ function OrderPage() {
         }
       }
 
-      // Build notes — include premium topping if selected
+      // Build notes — include premium topping label if selected
       const premiumNote = hasCart
         ? cartHasPremiumToppings
-          ? `Add-on: Premium Chocolate Toppings (+₹${PREMIUM_TOPPINGS_PRICE}) — included in item prices`
+          ? `Add-on: ${cartPremiumLabels[0]} (+₹${PREMIUM_TOPPINGS_PRICE}) — included in item prices`
           : null
         : isBrowniesSelected && premiumToppings
-          ? `Add-on: Premium Chocolate Toppings (+₹${PREMIUM_TOPPINGS_PRICE})`
+          ? `Add-on: ${flavourToppingLabel} (+₹${PREMIUM_TOPPINGS_PRICE})`
           : null;
 
       const cartNotes = hasCart && form.type === "Brownies"
@@ -426,7 +432,9 @@ function OrderPage() {
                         className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-[color:var(--chocolate-dark)] cursor-not-allowed"
                       />
                       <span>
-                        <span className="font-medium text-foreground">Premium Chocolate Toppings</span>
+                        <span className="font-medium text-foreground">
+                          {cartHasPremiumToppings ? cartPremiumLabels[0] : "Premium Chocolate Toppings"}
+                        </span>
                         <span className="ml-2 font-semibold text-[color:var(--gold)]">+₹{PREMIUM_TOPPINGS_PRICE}</span>
                         <span className="mt-0.5 block text-xs text-muted-foreground">
                           {cartHasPremiumToppings
@@ -448,7 +456,7 @@ function OrderPage() {
                     <Field label="Number of Pieces">
                       <ChipGroup options={browniePieces} value={form.browniePieces} onChange={(v) => update("browniePieces", v)} />
                     </Field>
-                    {/* Premium toppings checkbox for non-cart flow */}
+                    {/* Premium toppings checkbox — label updates based on selected flavour */}
                     <div className="sm:col-span-2">
                       <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 px-4 py-3 text-sm transition hover:border-[color:var(--gold)]/70 hover:bg-[color:var(--cream-dark)]/70">
                         <input
@@ -458,7 +466,7 @@ function OrderPage() {
                           className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-[color:var(--chocolate-dark)]"
                         />
                         <span>
-                          <span className="font-medium text-foreground">Premium Chocolate Toppings</span>
+                          <span className="font-medium text-foreground">{flavourToppingLabel}</span>
                           <span className="ml-2 font-semibold text-[color:var(--gold)]">+₹{PREMIUM_TOPPINGS_PRICE}</span>
                           <span className="mt-0.5 block text-xs text-muted-foreground">Available at an additional ₹{PREMIUM_TOPPINGS_PRICE} per order</span>
                         </span>
