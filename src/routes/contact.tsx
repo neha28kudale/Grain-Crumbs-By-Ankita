@@ -27,9 +27,9 @@ const channels = [
 function Page() {
   return (
     <>
-      {/* FIX 1: py-12 on mobile instead of py-20 — kills the dead space below the text */}
+      {/* FIX 1: Reduced vertical padding on mobile so hero doesn't leave a huge gap */}
       <section className="border-b border-border/60">
-        <div className="container-prose py-12 text-center md:py-24">
+        <div className="container-prose pb-10 pt-10 text-center md:py-24">
           <p className="divider-gold eyebrow">Contact</p>
           <h1 className="mt-5 font-display text-5xl md:text-6xl">Say hello.</h1>
           <p className="mx-auto mt-5 max-w-xl text-muted-foreground">
@@ -39,7 +39,8 @@ function Page() {
         </div>
       </section>
 
-      <section className="section">
+      {/* FIX 2: Tighter section padding on mobile */}
+      <section className="py-10 md:section">
         <div className="container-prose">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {channels.map((c, i) => (
@@ -54,7 +55,7 @@ function Page() {
                       : "card-warm"
                   }`}
                 >
-                  {/* FIX 2: Icon — smaller on mobile, original size on md+ */}
+                  {/* Icon: smaller on mobile, original on md+ */}
                   <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full md:h-11 md:w-11 ${
                     c.primary
                       ? "bg-[color:var(--gold)] text-[color:var(--chocolate-dark)]"
@@ -63,14 +64,14 @@ function Page() {
                     <c.icon className="h-4 w-4 md:h-5 md:w-5" />
                   </div>
 
-                  {/* Text — inline on mobile (no top margin), stacked on md+ (mt-5) */}
+                  {/* FIX 3: Text inline on mobile, stacked on md+. Email uses break-all so it wraps */}
                   <div className="min-w-0">
                     <p className={`text-xs uppercase tracking-[0.25em] md:mt-5 ${
                       c.primary ? "text-[color:var(--gold-soft)]" : "text-muted-foreground"
                     }`}>
                       {c.label}
                     </p>
-                    <p className={`mt-0.5 truncate font-display text-xl md:mt-2 md:text-2xl ${
+                    <p className={`mt-0.5 break-all font-display text-xl md:mt-2 md:text-2xl ${
                       c.primary ? "text-[color:var(--cream)]" : ""
                     }`}>
                       {c.value}
@@ -81,7 +82,7 @@ function Page() {
             ))}
           </div>
 
-          <Reveal delay={200} className="mt-16 text-center">
+          <Reveal delay={200} className="mt-12 text-center">
             <p className="text-muted-foreground">Ready to place an order?</p>
             <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
               <a href={WHATSAPP_ORDER_URL} target="_blank" rel="noreferrer" className="btn-primary w-full sm:w-auto">Order on WhatsApp</a>
