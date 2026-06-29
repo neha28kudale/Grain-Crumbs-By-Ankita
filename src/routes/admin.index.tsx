@@ -39,6 +39,14 @@ const STATUS_STYLES: Record<Order["status"], string> = {
   cancelled: "bg-red-100 text-red-900 border-red-300",
 };
 
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const mon = d.toLocaleString("en-GB", { month: "short", timeZone: "UTC" });
+  return `${day}/${mon}/${d.getUTCFullYear()}`;
+}
+
 function AdminDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -187,8 +195,8 @@ function AdminDashboard() {
                     <td className="px-4 py-3">{o.product_type}</td>
                     <td className="px-4 py-3">{o.flavour ?? "—"}</td>
                     <td className="px-4 py-3">{o.weight ?? "—"}</td>
-                    <td className="px-4 py-3">{o.date_required ?? "—"}</td>
-                    <td className="px-4 py-3">{new Date(o.created_at).toLocaleDateString()}</td>
+                    <td className="px-4 py-3">{formatDate(o.date_required)}</td>
+                    <td className="px-4 py-3">{formatDate(o.created_at)}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-block rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.16em] ${STATUS_STYLES[o.status]}`}>{o.status}</span>
                     </td>
@@ -224,12 +232,12 @@ function AdminDashboard() {
               <Detail label="Weight/Qty" value={active.weight} />
               <Detail label="Delivery" value={active.delivery} />
               <Detail label="Occasion" value={active.occasion} />
-              <Detail label="Date required" value={active.date_required} />
+              <Detail label="Date required" value={formatDate(active.date_required)} />
               <Detail label="Cake message" value={active.cake_message} full />
               <Detail label="Theme" value={active.theme} full />
               <Detail label="Address" value={active.address} full />
               <Detail label="Notes" value={active.notes} full />
-              <Detail label="Submitted" value={new Date(active.created_at).toLocaleString()} full />
+              <Detail label="Submitted" value={new Date(active.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} full />
             </dl>
 
             {/* Reference Image */}
