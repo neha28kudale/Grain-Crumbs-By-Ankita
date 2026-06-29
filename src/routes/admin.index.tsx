@@ -39,12 +39,31 @@ const STATUS_STYLES: Record<Order["status"], string> = {
   cancelled: "bg-red-100 text-red-900 border-red-300",
 };
 
+// Detect assorted box orders from the flavour field
+function isAssortedBoxOrder(flavour: string | null): boolean {
+  return !!(flavour && flavour.toLowerCase().includes("assorted box"));
+}
+
+// Display-friendly flavour label for the table
+function flavourDisplay(order: Order): string {
+  if (!order.flavour) return "—";
+  if (isAssortedBoxOrder(order.flavour)) return "Assorted Box 🎁";
+  return order.flavour;
+}
+
+// Display-friendly qty/weight label — for assorted box, weight holds "N boxes"
+function qtyDisplay(order: Order): string {
+  if (!order.weight) return "—";
+  if (isAssortedBoxOrder(order.flavour)) return `${order.weight} (assorted)`;
+  return order.weight;
+}
+
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
   const day = String(d.getUTCDate()).padStart(2, "0");
-  const mon = d.toLocaleString("en-GB", { month: "short", timeZone: "UTC" });
-  return `${day}/${mon}/${d.getUTCFullYear()}`;
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  return `${day}/${month}/${d.getUTCFullYear()}`;
 }
 
 function AdminDashboard() {
@@ -177,7 +196,7 @@ function AdminDashboard() {
                   <th className="px-4 py-3 text-left">Customer</th>
                   <th className="px-4 py-3 text-left">Mobile</th>
                   <th className="px-4 py-3 text-left">Product</th>
-                  <th className="px-4 py-3 text-left">Flavour</th>
+                  <th className="px-4 py-3 text-left">Flavour / Type</th>
                   <th className="px-4 py-3 text-left">Qty</th>
                   <th className="px-4 py-3 text-left">Date Req.</th>
                   <th className="px-4 py-3 text-left">Order Date</th>
@@ -188,13 +207,27 @@ function AdminDashboard() {
                 {filtered.length === 0 ? (
                   <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">No orders found.</td></tr>
                 ) : filtered.map((o) => (
-                  <tr key={o.id} onClick={() => { setActive(o); setLightbox(false); }} className="cursor-pointer border-t border-border hover:bg-[color:var(--cream-dark)]/30">
+                  <tr
+                    key={o.id}
+                    onClick={() => { setActive(o); setLightbox(false); }}
+                    className={`cursor-pointer border-t border-border hover:bg-[color:var(--cream-dark)]/30 ${
+                      isAssortedBoxOrder(o.flavour) ? "bg-[color:var(--gold)]/5" : ""
+                    }`}
+                  >
                     <td className="px-4 py-3 font-mono text-sm font-semibold text-[color:var(--chocolate-dark)]">#{o.order_number}</td>
                     <td className="px-4 py-3 font-medium">{o.name}</td>
                     <td className="px-4 py-3">{o.phone}</td>
                     <td className="px-4 py-3">{o.product_type}</td>
-                    <td className="px-4 py-3">{o.flavour ?? "—"}</td>
-                    <td className="px-4 py-3">{o.weight ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      {isAssortedBoxOrder(o.flavour) ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-[color:var(--gold)]/40 bg-[color:var(--cream-dark)]/60 px-2 py-0.5 text-xs font-medium text-[color:var(--chocolate-dark)]">
+                          🎁 Assorted Box
+                        </span>
+                      ) : (
+                        flavourDisplay(o)
+                      )}
+                    </td>
+                    <td className="px-4 py-3">{qtyDisplay(o)}</td>
                     <td className="px-4 py-3">{formatDate(o.date_required)}</td>
                     <td className="px-4 py-3">{formatDate(o.created_at)}</td>
                     <td className="px-4 py-3">
@@ -226,10 +259,27 @@ function AdminDashboard() {
               <button onClick={() => setActive(null)} className="text-2xl leading-none text-muted-foreground hover:text-foreground">×</button>
             </div>
 
+            {/* Assorted Box banner in modal */}
+            {isAssortedBoxOrder(active.flavour) && (
+              <div className="mt-4 flex items-center gap-3 rounded-xl border border-[color:var(--gold)]/40 bg-[color:var(--cream-dark)]/60 px-4 py-3">
+                <span className="text-xl">🎁</span>
+                <div>
+                  <p className="text-sm font-semibold text-[color:var(--chocolate-dark)]">Assorted Box Order</p>
+                  <p className="text-xs text-muted-foreground">All 6 flavours · 6 pieces per box · {active.weight ?? "qty not specified"}</p>
+                </div>
+              </div>
+            )}
+
             <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
               <Detail label="Product" value={active.product_type} />
-              <Detail label="Flavour" value={active.flavour} />
-              <Detail label="Weight/Qty" value={active.weight} />
+              <Detail
+                label={isAssortedBoxOrder(active.flavour) ? "Selection" : "Flavour"}
+                value={isAssortedBoxOrder(active.flavour) ? "Assorted Box (all 6 flavours, 6 pieces per box)" : active.flavour}
+              />
+              <Detail
+                label={isAssortedBoxOrder(active.flavour) ? "No. of Boxes" : "Weight / Qty"}
+                value={active.weight}
+              />
               <Detail label="Delivery" value={active.delivery} />
               <Detail label="Occasion" value={active.occasion} />
               <Detail label="Date required" value={formatDate(active.date_required)} />

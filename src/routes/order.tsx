@@ -29,11 +29,19 @@ type ProductType = "Brownies" | "Brownie Cake" | "Gift Box" | "Bulk / Corporate 
 type Delivery = "Pickup" | "Delivery";
 
 const productTypes: ProductType[] = ["Brownies", "Brownie Cake", "Gift Box", "Bulk / Corporate Order"];
+
+// Regular flavours + Assorted Box at the bottom
 const flavoursList = [
   "Chocolate Walnut", "Cappuccino Walnut", "Mixed Berry Jam",
   "Coconut Bounty", "Cream Cheese", "Hazelnut Spread",
 ];
+const ASSORTED_BOX = "Assorted Box";
+const flavoursWithAssorted = [...flavoursList, ASSORTED_BOX];
+
 const browniePieces = ["6 pieces", "12 pieces", "18 pieces", "24 pieces"];
+// For assorted box — quantity means number of boxes (each box = 6 pieces, all 6 flavours)
+const assortedBoxQty = ["1 box", "2 boxes", "3 boxes", "4 boxes", "5 boxes", "6+ boxes"];
+
 const cakeWeights = ["250g", "500g", "650g", "1kg"];
 
 const giftThemes = ["Birthday", "Anniversary", "Congratulations", "Thank You", "Baby Announcement", "Festival", "Other"];
@@ -45,29 +53,6 @@ const brandingOptions = ["Logo Sticker", "Custom Message Card", "Custom Packagin
 
 const occasions = ["Birthday", "Anniversary", "Corporate Event", "Gift", "Other"];
 
-const PREMIUM_TOPPINGS_PRICE = 35;
-
-// Flavour → premium topping label mapping
-const FLAVOUR_TOPPING_MAP: Record<string, string> = {
-  "Chocolate Walnut":  "Premium Chocolate Toppings",
-  "Cappuccino Walnut": "Premium Coffee Chocolate Toppings",
-  "Mixed Berry Jam":   "Premium Berries Chocolate Toppings",
-  "Coconut Bounty":    "Premium Coconut Chocolate Toppings",
-  "Cream Cheese":      "Premium Cream Cheese Chocolate Toppings",
-  "Hazelnut Spread":   "Nutella Brand Toppings",
-};
-
-// Must match the map in brownies.tsx
-const PREMIUM_TOPPING_LABELS = new Set(Object.values(FLAVOUR_TOPPING_MAP));
-
-// Returns the premium label from a cart item name like "Chocolate Walnut + Premium Chocolate Toppings"
-function extractPremiumLabel(itemName: string): string | null {
-  for (const label of PREMIUM_TOPPING_LABELS) {
-    if (itemName.includes(`+ ${label}`)) return label;
-  }
-  return null;
-}
-
 function OrderPage() {
   const { from } = Route.useSearch();
   const { items: cartItems, subtotal: cartSubtotal, clearCart } = useCart();
@@ -76,17 +61,6 @@ function OrderPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
-
-  // Detect if any cart item already has premium toppings baked into its price
-  // (set from the brownies page before add-to-cart)
-  const cartPremiumLabels = cartItems
-    .map((item) => extractPremiumLabel(item.name))
-    .filter((l): l is string => l !== null);
-  const cartHasPremiumToppings = cartPremiumLabels.length > 0;
-
-  // Premium chocolate toppings add-on (brownies only).
-  // Pre-check if the cart already carries premium toppings so the UI reflects reality.
-  const [premiumToppings, setPremiumToppings] = useState(false);
 
   // Reference image state
   const [referenceImage, setReferenceImage] = useState<File | null>(null);
@@ -97,6 +71,7 @@ function OrderPage() {
     type: "Brownies" as ProductType,
     flavour: flavoursList[0],
     browniePieces: browniePieces[0],
+    assortedQty: assortedBoxQty[0],
     weight: cakeWeights[1],
     message: "", theme: "",
     delivery: "Pickup" as Delivery,
@@ -117,6 +92,8 @@ function OrderPage() {
     corporateBranding: [] as string[],
     corporateNotes: "",
   });
+
+  const isAssortedBox = form.flavour === ASSORTED_BOX;
 
   const estimate = estimateDelivery(form.pincode);
 
@@ -149,16 +126,6 @@ function OrderPage() {
     [hasCart, cartItems],
   );
 
-  // Effective total for brownies.
-  // hasCart flow: ₹35 already baked into cartSubtotal if premium was chosen on brownies page — never add again.
-  // !hasCart flow: user picks premium on this page → add ₹35 on top.
-  const isBrowniesSelected = form.type === "Brownies";
-  const toppingAddon = isBrowniesSelected && !hasCart && premiumToppings ? PREMIUM_TOPPINGS_PRICE : 0;
-  const effectiveTotal = cartSubtotal + toppingAddon;
-
-  // Derive the correct topping label from the currently selected flavour
-  const flavourToppingLabel = FLAVOUR_TOPPING_MAP[form.flavour] ?? "Premium Chocolate Toppings";
-
   const waMessage = useMemo(() => {
     const lines = [
       `*New enquiry — Grain Crumbs*`,
@@ -167,11 +134,11 @@ function OrderPage() {
       form.email && `Email: ${form.email}`,
       `Product: ${form.type}`,
       hasCart && form.type === "Brownies" && `Cart items: ${cartSummary}`,
-      hasCart && form.type === "Brownies" && cartHasPremiumToppings && `Add-on: ${cartPremiumLabels[0]} (+₹${PREMIUM_TOPPINGS_PRICE}) — included in item prices`,
       hasCart && form.type === "Brownies" && `Estimated total: ₹${cartSubtotal}`,
-      !hasCart && form.type === "Brownies" && `Flavour: ${form.flavour}`,
-      !hasCart && form.type === "Brownies" && `Pieces: ${form.browniePieces}`,
-      !hasCart && form.type === "Brownies" && premiumToppings && `Add-on: ${flavourToppingLabel} (+₹${PREMIUM_TOPPINGS_PRICE})`,
+      !hasCart && form.type === "Brownies" && !isAssortedBox && `Flavour: ${form.flavour}`,
+      !hasCart && form.type === "Brownies" && !isAssortedBox && `Pieces: ${form.browniePieces}`,
+      !hasCart && form.type === "Brownies" && isAssortedBox && `Selection: Assorted Box (all 6 flavours, 6 pieces per box)`,
+      !hasCart && form.type === "Brownies" && isAssortedBox && `Number of Boxes: ${form.assortedQty}`,
       form.type === "Brownie Cake" && `Flavour: ${form.flavour}`,
       form.type === "Brownie Cake" && `Weight: ${form.weight}`,
       form.type === "Brownie Cake" && form.message && `Cake message: ${form.message}`,
@@ -192,7 +159,7 @@ function OrderPage() {
       form.notes && `Notes: ${form.notes}`,
     ].filter(Boolean).join("\n");
     return encodeURIComponent(lines);
-  }, [form, hasCart, cartSummary, cartSubtotal, effectiveTotal, premiumToppings, cartHasPremiumToppings, flavourToppingLabel, cartPremiumLabels]);
+  }, [form, hasCart, cartSummary, cartSubtotal, isAssortedBox]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,34 +191,34 @@ function OrderPage() {
         }
       }
 
-      // Build notes — include premium topping label if selected
-      const premiumNote = hasCart
-        ? cartHasPremiumToppings
-          ? `Add-on: ${cartPremiumLabels[0]} (+₹${PREMIUM_TOPPINGS_PRICE}) — included in item prices`
-          : null
-        : isBrowniesSelected && premiumToppings
-          ? `Add-on: ${flavourToppingLabel} (+₹${PREMIUM_TOPPINGS_PRICE})`
-          : null;
-
       const cartNotes = hasCart && form.type === "Brownies"
-        ? [form.notes, `Cart: ${cartSummary} (Est. ₹${cartSubtotal})`, premiumNote].filter(Boolean).join("\n")
-        : [form.notes, premiumNote].filter(Boolean).join("\n") || null;
+        ? [form.notes, `Cart: ${cartSummary} (Est. ₹${cartSubtotal})`].filter(Boolean).join("\n")
+        : form.notes || null;
+
+      // For assorted box: flavour = "Assorted Box", weight = number of boxes
+      const flavourValue = form.type === "Brownies" || form.type === "Brownie Cake"
+        ? hasCart && form.type === "Brownies"
+          ? cartItems.map((i) => i.name).join(", ")
+          : isAssortedBox
+            ? "Assorted Box (all 6 flavours, 6 pieces per box)"
+            : form.flavour
+        : null;
+
+      const weightValue = form.type === "Brownie Cake"
+        ? form.weight
+        : form.type === "Brownies" && !hasCart
+          ? isAssortedBox
+            ? form.assortedQty
+            : form.browniePieces
+          : hasCart ? cartSummary : null;
 
       const { data, error } = await supabase.from("orders").insert({
         name: form.name,
         phone: form.phone,
         email,
         product_type: form.type,
-        flavour: form.type === "Brownies" || form.type === "Brownie Cake"
-          ? hasCart && form.type === "Brownies"
-            ? cartItems.map((i) => i.name).join(", ")
-            : form.flavour
-          : null,
-        weight: form.type === "Brownie Cake"
-          ? form.weight
-          : form.type === "Brownies" && !hasCart
-            ? form.browniePieces
-            : hasCart ? cartSummary : null,
+        flavour: flavourValue,
+        weight: weightValue,
         cake_message: form.message || null,
         theme: form.type === "Brownie Cake"
           ? form.theme || null
@@ -394,84 +361,71 @@ function OrderPage() {
                   <ChipGroup options={productTypes} value={form.type} onChange={(v) => update("type", v)} />
                 </Field>
 
-                {/* BROWNIES — with cart or manual selection */}
+                {/* BROWNIES — cart flow */}
                 {isBrownies && hasCart && (
-                  <div className="sm:col-span-2 space-y-4">
-                    {/* Cart summary */}
-                    <div className="rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <ShoppingBag className="h-4 w-4 text-[color:var(--gold)]" />
-                        <p className="eyebrow !mb-0">Your cart</p>
-                      </div>
-                      <ul className="space-y-2 text-sm">
-                        {cartItems.map((item) => (
-                          <li key={item.slug} className="flex justify-between gap-4">
-                            <span>{item.name} × {item.quantity}</span>
-                            <span>₹{item.price * item.quantity}</span>
-                          </li>
-                        ))}
-                      </ul>
-
-                      {/* Total — ₹35 already included in item prices if premium was chosen */}
-                      <div className="mt-4 flex items-baseline justify-between border-t border-border/50 pt-3">
-                        <span className="text-sm text-muted-foreground">Estimated total</span>
-                        <p className="font-display text-xl text-[color:var(--chocolate)]">₹{cartSubtotal}</p>
-                      </div>
+                  <div className="sm:col-span-2 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ShoppingBag className="h-4 w-4 text-[color:var(--gold)]" />
+                      <p className="eyebrow !mb-0">Your cart</p>
                     </div>
-
-                    {/* Premium toppings indicator — read-only, reflects what was chosen on the brownies page */}
-                    <div className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${
-                      cartHasPremiumToppings
-                        ? "border-[color:var(--gold)]/60 bg-[color:var(--cream-dark)]/70"
-                        : "border-border/40 bg-[color:var(--cream-dark)]/20 opacity-60"
-                    }`}>
-                      <input
-                        type="checkbox"
-                        checked={cartHasPremiumToppings}
-                        readOnly
-                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-[color:var(--chocolate-dark)] cursor-not-allowed"
-                      />
-                      <span>
-                        <span className="font-medium text-foreground">
-                          {cartHasPremiumToppings ? cartPremiumLabels[0] : "Premium Chocolate Toppings"}
-                        </span>
-                        <span className="ml-2 font-semibold text-[color:var(--gold)]">+₹{PREMIUM_TOPPINGS_PRICE}</span>
-                        <span className="mt-0.5 block text-xs text-muted-foreground">
-                          {cartHasPremiumToppings
-                            ? "Already included — added when you built your cart"
-                            : "Not selected — go back to the brownies page to add this"}
-                        </span>
-                      </span>
-                    </div>
+                    <ul className="space-y-2 text-sm">
+                      {cartItems.map((item) => (
+                        <li key={item.slug} className="flex justify-between gap-4">
+                          <span>{item.name} × {item.quantity}</span>
+                          <span>₹{item.price * item.quantity}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-4 font-display text-xl text-[color:var(--chocolate)]">
+                      Estimated total: ₹{cartSubtotal}
+                    </p>
                   </div>
                 )}
 
+                {/* BROWNIES — manual / no cart flow */}
                 {isBrownies && !hasCart && (
                   <>
-                    <Field label="Flavour">
-                      <select value={form.flavour} onChange={(e) => update("flavour", e.target.value)} className={inputCls}>
+                    {/* Flavour dropdown includes Assorted Box at the bottom */}
+                    <Field label="Flavour" full>
+                      <select
+                        value={form.flavour}
+                        onChange={(e) => update("flavour", e.target.value)}
+                        className={inputCls}
+                      >
                         {flavoursList.map((f) => <option key={f}>{f}</option>)}
+                        <option disabled>──────────</option>
+                        <option value={ASSORTED_BOX}>Assorted Box</option>
                       </select>
                     </Field>
-                    <Field label="Number of Pieces">
-                      <ChipGroup options={browniePieces} value={form.browniePieces} onChange={(v) => update("browniePieces", v)} />
-                    </Field>
-                    {/* Premium toppings checkbox — label updates based on selected flavour */}
-                    <div className="sm:col-span-2">
-                      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--cream-dark)]/40 px-4 py-3 text-sm transition hover:border-[color:var(--gold)]/70 hover:bg-[color:var(--cream-dark)]/70">
-                        <input
-                          type="checkbox"
-                          checked={premiumToppings}
-                          onChange={(e) => setPremiumToppings(e.target.checked)}
-                          className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-[color:var(--chocolate-dark)]"
+
+                    {/* Assorted Box note */}
+                    {isAssortedBox && (
+                      <div className="sm:col-span-2 flex items-start gap-2 rounded-xl border border-[color:var(--gold)]/40 bg-[color:var(--cream-dark)]/50 px-4 py-3 text-sm">
+                        <span className="mt-0.5 shrink-0 font-semibold text-[color:var(--gold)]">*</span>
+                        <p className="text-muted-foreground">
+                          This box will have <span className="font-medium text-foreground">all 6 flavours</span> — 6 pieces per box (one of each flavour). Select how many boxes you'd like below.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Quantity — changes label/options based on assorted vs regular */}
+                    {isAssortedBox ? (
+                      <Field label="Number of Boxes">
+                        <ChipGroup
+                          options={assortedBoxQty}
+                          value={form.assortedQty}
+                          onChange={(v) => update("assortedQty", v)}
                         />
-                        <span>
-                          <span className="font-medium text-foreground">{flavourToppingLabel}</span>
-                          <span className="ml-2 font-semibold text-[color:var(--gold)]">+₹{PREMIUM_TOPPINGS_PRICE}</span>
-                          <span className="mt-0.5 block text-xs text-muted-foreground">Available at an additional ₹{PREMIUM_TOPPINGS_PRICE} per order</span>
-                        </span>
-                      </label>
-                    </div>
+                      </Field>
+                    ) : (
+                      <Field label="Number of Pieces">
+                        <ChipGroup
+                          options={browniePieces}
+                          value={form.browniePieces}
+                          onChange={(v) => update("browniePieces", v)}
+                        />
+                      </Field>
+                    )}
                   </>
                 )}
 
@@ -640,7 +594,7 @@ function OrderPage() {
                     {submitting
                       ? (<><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>)
                       : isCorporate || isGiftBox
-                        ? "Submit Gift Box Enquiry"
+                        ? "Submit Enquiry"
                         : "Submit Enquiry"}
                   </button>
                 </div>
